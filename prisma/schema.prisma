@@ -1,0 +1,62 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum SeatType {
+  SECOND_CLASS
+  FIRST_CLASS
+  BUSINESS
+  HARD_SLEEPER
+  SOFT_SLEEPER
+  HARD_SEAT
+  NO_SEAT
+}
+
+enum PlanStatus {
+  PENDING_SALE
+  ON_SALE
+  WAITLISTED
+  SUCCESS
+  FAILED
+  CANCELLED
+}
+
+model TravelPlan {
+  id            String     @id @default(uuid())
+  departureDate DateTime   @db.Date
+  holidayName   String?
+  fromStation   String
+  toStation     String
+  seatType      SeatType
+  ticketCount   Int        @default(1)
+  status        PlanStatus @default(PENDING_SALE)
+  remark        String?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  @@map("travel_plans")
+}
+
+model WaitlistOrder {
+  id            String   @id @default(uuid())
+  orderNo       String   @unique
+  departureDate DateTime @db.Date
+  fromStation   String
+  toStation     String
+  trainNumbers  String[]
+  seatType      String
+  ticketCount   Int
+  price         Decimal  @db.Decimal(8, 1)
+  departureTime String
+  arrivalTime   String
+  status        String
+  rawData       Json
+  syncedAt      DateTime @default(now()) @updatedAt
+  createdAt     DateTime @default(now())
+
+  @@map("waitlist_orders")
+}
