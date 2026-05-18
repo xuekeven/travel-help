@@ -1,0 +1,47 @@
+# 12306 买票助手 · Chrome Extension
+
+## 安装方式（开发者模式，无需上架）
+
+1. 打开 Chrome，地址栏输入 `chrome://extensions/`
+2. 右上角开启 **「开发者模式」**
+3. 点击 **「加载已解压的扩展程序」**
+4. 选择本项目的 `extension/` 目录
+5. 插件加载成功，工具栏出现图标
+
+## 首次配置
+
+1. 点击工具栏图标 → 打开设置，或右键图标 → 「选项」
+2. 填写 **服务器地址**：`http://<Tailscale IP>:3005`（如 `http://100.64.0.1:3005`）
+3. 填写 **同步 Token**：与服务器 `.env` 中 `EXTENSION_SYNC_TOKEN` 一致
+4. 点击 **「保存设置」**
+5. 点击 **「测试连接」** 确认服务器可访问
+
+## 使用方式
+
+1. 登录 12306（<https://kyfw.12306.cn>）
+2. 进入「候补订单」页面（路径含 `/otn/afterNate/`）
+3. 页面加载完成后插件自动拦截接口响应并同步
+4. 打开 Chrome DevTools Console，看到 `[12306助手] ✅ 已同步 N 条候补订单` 表示成功
+5. 刷新助手页面即可看到最新候补订单数据
+
+## 接口字段说明（已通过实际抓包验证 ✅）
+
+- **接口**：`POST /otn/afterNateOrder/queryUnHonourHOrder`
+- **页面**：`https://kyfw.12306.cn/otn/view/lineUp_order.html`
+- **数据路径**：`response.data.list[]`
+
+每条候补订单（`list` 中的一项）包含 `needs[]` 数组，表示用户设置的多个候补方案（可同时候补多个车次或目的地）。
+
+| 助手字段 | 12306 实际字段 | 说明 |
+|---|---|---|
+| `orderNo` | `raw.reserve_no` | 订单号（`sequence_no` 为空） |
+| `status` | `raw.status_name` | "待兑现"、"已兑现" 等 |
+| `price` | `raw.prepay_amount` | 预付金额（最高档票价） |
+| `ticketCount` | `raw.passengers.length` | 乘客数量 |
+| `departureDate` | `needs[0].train_date` | "YYYY-MM-DD" |
+| `fromStation` | `needs[0].from_station_name` | 始发站 |
+| `toStation` | `needs[].to_station_name` | 终到站（多目的地用 "/" 连接） |
+| `trainNumbers` | `needs[].board_train_code` | 所有候补车次（去重聚合） |
+| `seatType` | `needs[0].seat_name` | "二等座" 等中文名 |
+| `departureTime` | `needs[0].start_time` | "HH:mm" |
+| `arrivalTime` | `needs[0].arrive_time` | "HH:mm" |

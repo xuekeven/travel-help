@@ -22,7 +22,7 @@ function renderSaleInfo(saleDate: string, daysUntilSale: number) {
     label = '明天'
     color = '#fa8c16'
   } else {
-    label = `还有 ${daysUntilSale} 天`
+    label = `还有${daysUntilSale}天`
     color = '#1677ff'
   }
 
