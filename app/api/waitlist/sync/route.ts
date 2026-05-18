@@ -1,17 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { mergeExtensionCors, optionsExtensionCors } from '@/lib/extension-cors'
+
+export function OPTIONS() {
+  return optionsExtensionCors()
+}
 
 export async function POST(request: NextRequest) {
   const token = request.headers.get('x-sync-token')
   if (token !== process.env.EXTENSION_SYNC_TOKEN) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return mergeExtensionCors(NextResponse.json({ error: 'Unauthorized' }, { status: 401 }))
   }
 
   const body = await request.json()
   const { orders } = body
 
   if (!Array.isArray(orders) || orders.length === 0) {
-    return NextResponse.json({ error: 'orders 不能为空' }, { status: 400 })
+    return mergeExtensionCors(NextResponse.json({ error: 'orders 不能为空' }, { status: 400 }))
   }
 
   await Promise.all(
@@ -41,5 +46,5 @@ export async function POST(request: NextRequest) {
     )
   )
 
-  return NextResponse.json({ success: true, count: orders.length })
+  return mergeExtensionCors(NextResponse.json({ success: true, count: orders.length }))
 }

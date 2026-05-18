@@ -1,3 +1,12 @@
+/**
+ * 仅填写站点根（含 basePath），不要带 /api；请求时会自动拼 /api/...
+ */
+function normalizeServerBase(input) {
+  let s = input.trim().replace(/\/+$/, '')
+  if (s.endsWith('/api')) s = s.replace(/\/api$/, '')
+  return s
+}
+
 const serverUrlInput = document.getElementById('serverUrl')
 const syncTokenInput = document.getElementById('syncToken')
 const saveBtn = document.getElementById('save')
@@ -7,13 +16,13 @@ const testResult = document.getElementById('testResult')
 
 // 读取已保存的配置
 chrome.storage.sync.get(['serverUrl', 'syncToken'], (result) => {
-  if (result.serverUrl) serverUrlInput.value = result.serverUrl
+  if (result.serverUrl) serverUrlInput.value = normalizeServerBase(result.serverUrl)
   if (result.syncToken) syncTokenInput.value = result.syncToken
 })
 
 // 保存配置
 saveBtn.addEventListener('click', () => {
-  const url = serverUrlInput.value.trim().replace(/\/$/, '')
+  const url = normalizeServerBase(serverUrlInput.value)
   const token = syncTokenInput.value.trim()
 
   chrome.storage.sync.set({ serverUrl: url, syncToken: token }, () => {
@@ -22,9 +31,9 @@ saveBtn.addEventListener('click', () => {
   })
 })
 
-// 测试连通性（调用 /api/notify/test 接口）
+// 测试连通性（经 background 请求 /api/notify/test，避免选项页 fetch 触发 CORS / Failed to fetch）
 testBtn.addEventListener('click', async () => {
-  const url = serverUrlInput.value.trim().replace(/\/$/, '')
+  const url = normalizeServerBase(serverUrlInput.value)
   const token = syncTokenInput.value.trim()
 
   if (!url) {
@@ -36,20 +45,22 @@ testBtn.addEventListener('click', async () => {
   testBtn.disabled = true
 
   try {
-    const res = await fetch(`${url}/api/notify/test`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-sync-token': token,
-      },
+    const res = await chrome.runtime.sendMessage({
+      type: 'TEST_NOTIFY',
+      serverUrl: url,
+      syncToken: token,
     })
-    if (res.ok) {
+    if (res?.error) {
+      showTestResult(`✗ 连接失败：${res.error}`, false)
+      return
+    }
+    if (res?.ok) {
       showTestResult('✓ 连接成功，服务正常', true)
     } else {
-      showTestResult(`✗ 服务返回 ${res.status}，请检查地址和 Token`, false)
+      showTestResult(`✗ 服务返回 ${res?.status ?? '?'}，请检查地址和 Token`, false)
     }
   } catch (err) {
-    showTestResult(`✗ 连接失败：${err.message}`, false)
+    showTestResult(`✗ 连接失败：${err?.message ?? err}`, false)
   } finally {
     testBtn.textContent = '测试连接'
     testBtn.disabled = false
