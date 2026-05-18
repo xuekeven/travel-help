@@ -1,0 +1,19 @@
+.clock {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #555;
+  font-size: 14px;
+  user-select: none;
+}
+
+.date {
+  color: #666;
+}
+
+.time {
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  color: #1a1a1a;
+  letter-spacing: 0.5px;
+}

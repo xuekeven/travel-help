@@ -4,12 +4,13 @@ import type { WaitlistGroup } from '@/types'
 
 export async function GET(request: NextRequest) {
   const sortBy = request.nextUrl.searchParams.get('sortBy') ?? 'departureTime'
+  const sortDir = (request.nextUrl.searchParams.get('sortDir') ?? 'asc') as 'asc' | 'desc'
 
   const orders = await prisma.waitlistOrder.findMany({
     orderBy:
       sortBy === 'price'
-        ? [{ departureDate: 'asc' }, { price: 'asc' }]
-        : [{ departureDate: 'asc' }, { departureTime: 'asc' }],
+        ? [{ departureDate: 'asc' }, { price: sortDir }]
+        : [{ departureDate: 'asc' }, { departureTime: sortDir }],
   })
 
   const groupMap = new Map<string, WaitlistGroup>()

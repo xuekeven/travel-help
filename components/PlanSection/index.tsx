@@ -1,18 +1,37 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
-import { Button, Table, Tag, Popconfirm, message } from 'antd'
+import { Button, Table, Tag, Popconfirm, message, Tooltip } from 'antd'
 import { PlusOutlined } from '@ant-design/icons'
-import type { ColumnsType } from 'antd/es/table'
+import type { ColumnsType, SorterResult } from 'antd/es/table/interface'
 import type { TravelPlan } from '@/types'
 import { SEAT_TYPE_LABELS, PLAN_STATUS_LABELS, PLAN_STATUS_COLORS } from '@/types'
 import PlanForm from './PlanForm'
 import styles from './index.module.scss'
 
-function renderDaysUntilSale(days: number) {
-  if (days > 0) return <span>{days} 天后</span>
-  if (days === 0) return <Tag color="blue">今天开售</Tag>
-  if (days === -1) return <span style={{ color: '#999' }}>昨天开售</span>
-  return <span style={{ color: '#999' }}>已过开售日</span>
+function renderSaleInfo(saleDate: string, daysUntilSale: number) {
+  let label: string
+  let color: string
+
+  if (daysUntilSale < 0) {
+    label = '已开售'
+    color = '#999'
+  } else if (daysUntilSale === 0) {
+    label = '今天'
+    color = '#f5222d'
+  } else if (daysUntilSale === 1) {
+    label = '明天'
+    color = '#fa8c16'
+  } else {
+    label = `还有 ${daysUntilSale} 天`
+    color = '#1677ff'
+  }
+
+  return (
+    <span>
+      {saleDate}&nbsp;
+      <span style={{ color, fontWeight: 500 }}>（{label}）</span>
+    </span>
+  )
 }
 
 export default function PlanSection() {
@@ -32,9 +51,7 @@ export default function PlanSection() {
     }
   }, [])
 
-  useEffect(() => {
-    fetchPlans()
-  }, [fetchPlans])
+  useEffect(() => { fetchPlans() }, [fetchPlans])
 
   const handleDelete = async (id: string) => {
     const res = await fetch(`/api/plans/${id}`, { method: 'DELETE' })
@@ -56,48 +73,48 @@ export default function PlanSection() {
     setModalOpen(true)
   }
 
-  const handleFormSuccess = () => {
-    setModalOpen(false)
-    fetchPlans()
-  }
-
   const columns: ColumnsType<TravelPlan> = [
     {
       title: '出行日期',
       dataIndex: 'departureDate',
       width: 120,
+      sorter: (a, b) => a.departureDate.localeCompare(b.departureDate),
+      sortDirections: ['ascend', 'descend', 'ascend'],
+      defaultSortOrder: 'ascend',
     },
     {
       title: '节假日',
       dataIndex: 'holidayName',
-      width: 90,
-      render: (v: string | null) => v || <span style={{ color: '#bbb' }}>-</span>,
+      width: 88,
+      render: (v: string | null) =>
+        v ? <Tag color="gold">{v}</Tag> : <span style={{ color: '#bbb' }}>-</span>,
     },
     {
-      title: '路线',
-      key: 'route',
-      render: (_: unknown, r: TravelPlan) => (
-        <span className={styles.route}>
-          {r.fromStation} → {r.toStation}
-        </span>
-      ),
+      title: '始发站',
+      dataIndex: 'fromStation',
+      width: 120,
+    },
+    {
+      title: '终到站',
+      dataIndex: 'toStation',
+      width: 120,
     },
     {
       title: '座位',
       dataIndex: 'seatType',
-      width: 90,
+      width: 80,
       render: (v: string) => SEAT_TYPE_LABELS[v as keyof typeof SEAT_TYPE_LABELS] ?? v,
     },
     {
       title: '张数',
       dataIndex: 'ticketCount',
-      width: 60,
+      width: 55,
       align: 'center',
     },
     {
       title: '状态',
       dataIndex: 'status',
-      width: 100,
+      width: 95,
       render: (v: string) => (
         <Tag color={PLAN_STATUS_COLORS[v as keyof typeof PLAN_STATUS_COLORS]}>
           {PLAN_STATUS_LABELS[v as keyof typeof PLAN_STATUS_LABELS] ?? v}
@@ -105,20 +122,29 @@ export default function PlanSection() {
       ),
     },
     {
-      title: '开售日',
-      dataIndex: 'saleDate',
-      width: 120,
+      title: '开售日期',
+      key: 'saleInfo',
+      width: 190,
+      render: (_: unknown, r: TravelPlan) => renderSaleInfo(r.saleDate, r.daysUntilSale),
     },
     {
-      title: '距开售',
-      dataIndex: 'daysUntilSale',
-      width: 100,
-      render: renderDaysUntilSale,
+      title: '备注',
+      dataIndex: 'remark',
+      ellipsis: true,
+      render: (v: string | null) =>
+        v ? (
+          <Tooltip title={v}>
+            <span style={{ color: '#555' }}>{v}</span>
+          </Tooltip>
+        ) : (
+          <span style={{ color: '#bbb' }}>-</span>
+        ),
     },
     {
       title: '操作',
       key: 'action',
-      width: 130,
+      width: 110,
+      fixed: 'right',
       render: (_: unknown, record: TravelPlan) => (
         <>
           <Button type="link" size="small" onClick={() => handleEdit(record)}>
@@ -156,13 +182,14 @@ export default function PlanSection() {
         loading={loading}
         pagination={false}
         size="middle"
+        scroll={{ x: 'max-content' }}
         locale={{ emptyText: '暂无出行计划，点击右上角添加' }}
       />
 
       <PlanForm
         open={modalOpen}
         editingPlan={editingPlan}
-        onSuccess={handleFormSuccess}
+        onSuccess={() => { setModalOpen(false); fetchPlans() }}
         onCancel={() => setModalOpen(false)}
       />
     </section>

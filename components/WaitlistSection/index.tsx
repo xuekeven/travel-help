@@ -5,21 +5,39 @@ import type { WaitlistGroup } from '@/types'
 import WaitlistGroupCard from './WaitlistGroup'
 import styles from './index.module.scss'
 
+type SortOption = 'time_asc' | 'time_desc' | 'price_asc' | 'price_desc'
+
+const SORT_OPTIONS: { value: SortOption; label: string }[] = [
+  { value: 'time_asc', label: '出发 早→晚' },
+  { value: 'time_desc', label: '出发 晚→早' },
+  { value: 'price_asc', label: '票价 低→高' },
+  { value: 'price_desc', label: '票价 高→低' },
+]
+
+function parseSortOption(opt: SortOption): { sortBy: string; sortDir: string } {
+  const [field, dir] = opt.split('_')
+  return {
+    sortBy: field === 'time' ? 'departureTime' : 'price',
+    sortDir: dir,
+  }
+}
+
 export default function WaitlistSection() {
   const [groups, setGroups] = useState<WaitlistGroup[]>([])
   const [loading, setLoading] = useState(false)
-  const [sortBy, setSortBy] = useState<'departureTime' | 'price'>('departureTime')
+  const [sortOption, setSortOption] = useState<SortOption>('time_asc')
   const [lastSynced, setLastSynced] = useState<string | null>(null)
 
   const fetchOrders = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await fetch(`/api/waitlist?sortBy=${sortBy}`)
+      const { sortBy, sortDir } = parseSortOption(sortOption)
+      const res = await fetch(`/api/waitlist?sortBy=${sortBy}&sortDir=${sortDir}`)
       const json = await res.json()
       setGroups(json.data)
       if (json.data.length > 0) {
         const allOrders = json.data.flatMap((g: WaitlistGroup) => g.orders)
-        const latest = allOrders.sort(
+        const latest = [...allOrders].sort(
           (a: any, b: any) => new Date(b.syncedAt).getTime() - new Date(a.syncedAt).getTime()
         )[0]
         setLastSynced(latest?.syncedAt ?? null)
@@ -27,11 +45,9 @@ export default function WaitlistSection() {
     } finally {
       setLoading(false)
     }
-  }, [sortBy])
+  }, [sortOption])
 
-  useEffect(() => {
-    fetchOrders()
-  }, [fetchOrders])
+  useEffect(() => { fetchOrders() }, [fetchOrders])
 
   return (
     <section className={styles.section}>
@@ -49,13 +65,16 @@ export default function WaitlistSection() {
           )}
         </h2>
         <Radio.Group
-          value={sortBy}
-          onChange={(e) => setSortBy(e.target.value)}
+          value={sortOption}
+          onChange={(e) => setSortOption(e.target.value)}
           size="small"
           buttonStyle="solid"
         >
-          <Radio.Button value="departureTime">按出发时间</Radio.Button>
-          <Radio.Button value="price">按票价</Radio.Button>
+          {SORT_OPTIONS.map((opt) => (
+            <Radio.Button key={opt.value} value={opt.value}>
+              {opt.label}
+            </Radio.Button>
+          ))}
         </Radio.Group>
       </div>
 
