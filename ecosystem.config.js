@@ -5,7 +5,7 @@ module.exports = {
     {
       name: '12306-help',
       script: 'pnpm',
-      args: 'start',
+      args: 'start -- -p 3005',
       cwd: __dirname,
       instances: 1,
       autorestart: true,
