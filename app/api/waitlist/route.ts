@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { buildNeedSegmentsForOrder } from '@/lib/waitlist-need-segments'
 import type { WaitlistGroup } from '@/types'
 
 export async function GET(request: NextRequest) {
@@ -43,6 +44,15 @@ export async function GET(request: NextRequest) {
       status: order.status,
       syncedAt: order.syncedAt.toISOString(),
       createdAt: order.createdAt.toISOString(),
+      needSegments: buildNeedSegmentsForOrder({
+        rawData: order.rawData,
+        trainNumbers: order.trainNumbers,
+        fromStation: order.fromStation,
+        toStation: order.toStation,
+        departureTime: order.departureTime,
+        arrivalTime: order.arrivalTime,
+        seatType: order.seatType,
+      }),
     })
   }
 

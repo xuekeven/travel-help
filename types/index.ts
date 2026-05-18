@@ -31,6 +31,17 @@ export interface TravelPlan {
   daysUntilSale: number
 }
 
+/** 单条候补方案（对应 12306 needs[] 的一项），用于车次/发到站/时刻展示 */
+export interface WaitlistNeedSegment {
+  index: number
+  trainCode: string
+  fromStation: string
+  toStation: string
+  departureTime: string
+  arrivalTime: string
+  seatType: string
+}
+
 export interface WaitlistOrder {
   id: string
   orderNo: string
@@ -46,6 +57,8 @@ export interface WaitlistOrder {
   status: string
   syncedAt: string
   createdAt: string
+  /** 由接口根据 rawData.needs 计算；前端用于图二式分行展示 */
+  needSegments: WaitlistNeedSegment[]
 }
 
 export interface WaitlistGroup {

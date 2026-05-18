@@ -49,3 +49,80 @@
   color: #888;
   margin-left: 8px;
 }
+
+/* 候补 needs[] 分行展示（对齐 12306 App 列表样式） */
+.needRows {
+  min-width: 400px;
+  padding: 2px 0;
+}
+
+.needRow {
+  display: flex;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 13px;
+  color: #1a1a1a;
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.idx {
+  width: 24px;
+  flex-shrink: 0;
+  color: #666;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.dep,
+.arr {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 64px;
+}
+
+.station {
+  font-weight: 500;
+  line-height: 1.25;
+}
+
+.time {
+  font-size: 12px;
+  color: #666;
+  line-height: 1.25;
+}
+
+.mid {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 56px;
+  margin: 0 10px;
+}
+
+.code {
+  font-weight: 600;
+  color: #1677ff;
+  line-height: 1.25;
+}
+
+.arrow {
+  font-size: 12px;
+  color: #bfbfbf;
+  line-height: 1;
+  margin-top: 2px;
+}
+
+.seatCol {
+  margin-left: auto;
+  padding-left: 12px;
+  color: #333;
+  white-space: nowrap;
+  font-size: 13px;
+}

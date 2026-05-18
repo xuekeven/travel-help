@@ -1,24 +1,52 @@
-import { Table, Tag } from 'antd'
+import { Table } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import type { WaitlistOrder, WaitlistGroup } from '@/types'
+import type { WaitlistOrder, WaitlistGroup, WaitlistNeedSegment } from '@/types'
 import styles from './index.module.scss'
+
+function NeedSegmentRows({ segments }: { segments: WaitlistNeedSegment[] }) {
+  const list = segments?.length ? segments : []
+  return (
+    <div className={styles.needRows}>
+      {list.map((seg) => (
+        <div key={`${seg.index}-${seg.trainCode}-${seg.toStation}`} className={styles.needRow}>
+          <span className={styles.idx}>{seg.index}</span>
+          <div className={styles.dep}>
+            <span className={styles.station}>{seg.fromStation}</span>
+            <span className={styles.time}>{seg.departureTime}</span>
+          </div>
+          <div className={styles.mid}>
+            <span className={styles.code}>{seg.trainCode}</span>
+            <span className={styles.arrow} aria-hidden>
+              →
+            </span>
+          </div>
+          <div className={styles.arr}>
+            <span className={styles.station}>{seg.toStation}</span>
+            <span className={styles.time}>{seg.arrivalTime}</span>
+          </div>
+          <span className={styles.seatCol}>{seg.seatType || '—'}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
 
 export default function WaitlistGroupCard({ group }: { group: WaitlistGroup }) {
   const columns: ColumnsType<WaitlistOrder> = [
     {
       title: '候补车次',
-      dataIndex: 'trainNumbers',
-      render: (trains: string[]) =>
-        trains.map((t) => (
-          <Tag key={t} color="blue">
-            {t}
-          </Tag>
-        )),
+      key: 'needSegments',
+      width: 440,
+      render: (_: unknown, r: WaitlistOrder) => (
+        <NeedSegmentRows segments={r.needSegments ?? []} />
+      ),
     },
     {
       title: '座位类型',
-      dataIndex: 'seatType',
+      key: 'seatType',
       width: 90,
+      render: (_: unknown, r: WaitlistOrder) =>
+        (r.needSegments?.length ?? 0) > 1 ? '—' : r.seatType,
     },
     {
       title: '票价',
@@ -30,7 +58,10 @@ export default function WaitlistGroupCard({ group }: { group: WaitlistGroup }) {
       title: '出发→到达',
       key: 'time',
       width: 130,
-      render: (_: unknown, r: WaitlistOrder) => `${r.departureTime} → ${r.arrivalTime}`,
+      render: (_: unknown, r: WaitlistOrder) =>
+        (r.needSegments?.length ?? 0) > 1
+          ? '—'
+          : `${r.departureTime} → ${r.arrivalTime}`,
     },
     {
       title: '候补状态',
