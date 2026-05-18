@@ -11,7 +11,9 @@
 ## 首次配置
 
 1. 点击工具栏图标 → 打开设置，或右键图标 → 「选项」
-2. 填写 **服务器地址**：`http://<Tailscale IP>:3005`（如 `http://100.64.0.1:3005`）
+2. 填写 **服务器地址**（**HTTPS**，与 Mixed Content 策略兼容；路径需包含助手前缀）：
+   - 示例：`https://homeserver.tailed5977.ts.net/12306`（**无**末尾 `/`）
+   - 若仅内网 HTTP + 反代映射到本机，且扩展仍走 background `fetch`，也可用 `http://<Tailscale IP>:3005/12306`（与 `next.config` 的 `basePath` 一致）
 3. 填写 **同步 Token**：与服务器 `.env` 中 `EXTENSION_SYNC_TOKEN` 一致
 4. 点击 **「保存设置」**
 5. 点击 **「测试连接」** 确认服务器可访问

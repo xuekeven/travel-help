@@ -7,6 +7,7 @@ import {
 import dayjs from 'dayjs'
 import type { TravelPlan } from '@/types'
 import { SEAT_TYPE_LABELS, PLAN_STATUS_LABELS } from '@/types'
+import { withBasePath } from '@/lib/with-base-path'
 
 interface Props {
   open: boolean
@@ -47,8 +48,8 @@ export default function PlanForm({ open, editingPlan, onSuccess, onCancel }: Pro
       ...values,
       departureDate: (values.departureDate as dayjs.Dayjs).format('YYYY-MM-DD'),
     }
-    const url = isEdit ? `/api/plans/${editingPlan!.id}` : '/api/plans'
-    const res = await fetch(url, {
+    const path = isEdit ? `/api/plans/${editingPlan!.id}` : '/api/plans'
+    const res = await fetch(withBasePath(path), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),

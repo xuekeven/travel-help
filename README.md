@@ -14,7 +14,9 @@ pnpm dev
 bun dev
 ```
 
-Open [http://localhost:3005](http://localhost:3005) with your browser to see the result.
+Open [http://localhost:3005/12306](http://localhost:3005/12306) with your browser to see the result.
+
+（本项目使用 Next.js `basePath: '/12306'`，首页与 API 均位于此前缀下。）
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 

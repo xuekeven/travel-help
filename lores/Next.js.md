@@ -182,12 +182,13 @@ async function PlansPage() {
 ```tsx
 "use client"
 import { useEffect, useState } from 'react'
+import { withBasePath } from '@/lib/with-base-path'
 
 function PlanList() {
   const [plans, setPlans] = useState([])
 
   useEffect(() => {
-    fetch('/api/plans')
+    fetch(withBasePath('/api/plans'))
       .then(r => r.json())
       .then(data => setPlans(data.data))
   }, [])

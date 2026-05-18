@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Radio, Spin, Empty, Typography } from 'antd'
 import type { WaitlistGroup } from '@/types'
+import { withBasePath } from '@/lib/with-base-path'
 import WaitlistGroupCard from './WaitlistGroup'
 import styles from './index.module.scss'
 
@@ -32,7 +33,7 @@ export default function WaitlistSection() {
     setLoading(true)
     try {
       const { sortBy, sortDir } = parseSortOption(sortOption)
-      const res = await fetch(`/api/waitlist?sortBy=${sortBy}&sortDir=${sortDir}`)
+      const res = await fetch(withBasePath(`/api/waitlist?sortBy=${sortBy}&sortDir=${sortDir}`))
       const json = await res.json()
       setGroups(json.data)
       if (json.data.length > 0) {

@@ -4,6 +4,7 @@ import { Button, Table, Tag, Popconfirm, message, Tooltip } from 'antd'
 import { PlusOutlined } from '@ant-design/icons'
 import type { ColumnsType, SorterResult } from 'antd/es/table/interface'
 import type { TravelPlan } from '@/types'
+import { withBasePath } from '@/lib/with-base-path'
 import { SEAT_TYPE_LABELS, PLAN_STATUS_LABELS, PLAN_STATUS_COLORS } from '@/types'
 import PlanForm from './PlanForm'
 import styles from './index.module.scss'
@@ -43,7 +44,7 @@ export default function PlanSection() {
   const fetchPlans = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/plans')
+      const res = await fetch(withBasePath('/api/plans'))
       const json = await res.json()
       setPlans(json.data)
     } finally {
@@ -54,7 +55,7 @@ export default function PlanSection() {
   useEffect(() => { fetchPlans() }, [fetchPlans])
 
   const handleDelete = async (id: string) => {
-    const res = await fetch(`/api/plans/${id}`, { method: 'DELETE' })
+    const res = await fetch(withBasePath(`/api/plans/${id}`), { method: 'DELETE' })
     if (res.ok) {
       message.success('删除成功')
       fetchPlans()
