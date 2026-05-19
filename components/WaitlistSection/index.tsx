@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { Radio, Spin, Empty, Typography } from 'antd'
 import type { WaitlistGroup } from '@/types'
 import { withBasePath } from '@/lib/with-base-path'
+import { formatDateTimeShanghai } from '@/lib/date'
 import WaitlistGroupCard from './WaitlistGroup'
 import styles from './index.module.scss'
 
@@ -61,7 +62,7 @@ export default function WaitlistSection() {
               style={{ fontSize: 12, fontWeight: 400, marginLeft: 12 }}
             >
               最近同步：
-              {new Date(lastSynced).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })}
+              {formatDateTimeShanghai(lastSynced)}
             </Typography.Text>
           )}
         </h2>

@@ -37,3 +37,20 @@ export function formatDateForNotify(departureDate: Date | string): string {
   const d = new Date(departureDate)
   return format(d, 'yyyy年M月d日 EEEE', { locale: zhCN })
 }
+
+/** 表格展示：2026-06-04 周四 */
+export function formatDepartureDateWithWeekday(departureDate: Date | string): string {
+  const dateStr =
+    typeof departureDate === 'string'
+      ? departureDate.slice(0, 10)
+      : format(departureDate, 'yyyy-MM-dd')
+  const [y, m, d] = dateStr.split('-').map(Number)
+  const local = new Date(y, m - 1, d)
+  return format(local, 'yyyy-MM-dd EEE', { locale: zhCN })
+}
+
+/** 最近同步等：2026-05-19 周一 01:26:40（中国时区） */
+export function formatDateTimeShanghai(iso: string | Date): string {
+  const zoned = toZonedTime(new Date(iso), TIMEZONE)
+  return format(zoned, 'yyyy-MM-dd EEE HH:mm:ss', { locale: zhCN })
+}

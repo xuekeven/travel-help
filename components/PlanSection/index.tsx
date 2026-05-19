@@ -6,6 +6,7 @@ import type { ColumnsType, SorterResult } from 'antd/es/table/interface'
 import type { TravelPlan } from '@/types'
 import { withBasePath } from '@/lib/with-base-path'
 import { SEAT_TYPE_LABELS, PLAN_STATUS_LABELS, PLAN_STATUS_COLORS } from '@/types'
+import { formatDepartureDateWithWeekday } from '@/lib/date'
 import PlanForm from './PlanForm'
 import styles from './index.module.scss'
 
@@ -29,8 +30,8 @@ function renderSaleInfo(saleDate: string, daysUntilSale: number) {
 
   return (
     <span>
-      {saleDate}&nbsp;
-      <span style={{ color, fontWeight: 500 }}>{label}</span>
+      <span style={{ color, fontWeight: 500 }}>{label}&nbsp;</span>
+      {formatDepartureDateWithWeekday(saleDate)}
     </span>
   )
 }
@@ -78,10 +79,11 @@ export default function PlanSection() {
     {
       title: '出行日期',
       dataIndex: 'departureDate',
-      width: 120,
+      width: 140,
       sorter: (a, b) => a.departureDate.localeCompare(b.departureDate),
       sortDirections: ['ascend', 'descend', 'ascend'],
       defaultSortOrder: 'ascend',
+      render: (v: string) => formatDepartureDateWithWeekday(v),
     },
     {
       title: '节假日',
