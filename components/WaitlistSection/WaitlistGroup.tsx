@@ -36,22 +36,15 @@ export default function WaitlistGroupCard({ group }: { group: WaitlistGroup }) {
     {
       title: '候补车次',
       key: 'needSegments',
-      width: 440,
+      width: 400,
       render: (_: unknown, r: WaitlistOrder) => (
         <NeedSegmentRows segments={r.needSegments ?? []} />
       ),
     },
     {
-      title: '座位类型',
-      key: 'seatType',
-      width: 90,
-      render: (_: unknown, r: WaitlistOrder) =>
-        (r.needSegments?.length ?? 0) > 1 ? '—' : r.seatType,
-    },
-    {
       title: '票价',
       dataIndex: 'price',
-      width: 90,
+      width: 100,
       render: (v: number) => `¥${Number(v).toFixed(1)}`,
     },
     {

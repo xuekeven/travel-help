@@ -30,7 +30,7 @@ function renderSaleInfo(saleDate: string, daysUntilSale: number) {
   return (
     <span>
       {saleDate}&nbsp;
-      <span style={{ color, fontWeight: 500 }}>（{label}）</span>
+      <span style={{ color, fontWeight: 500 }}>{label}</span>
     </span>
   )
 }
