@@ -13,38 +13,36 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json()
-  const { orders } = body
+  const orders = Array.isArray(body?.orders) ? body.orders : []
 
-  if (!Array.isArray(orders) || orders.length === 0) {
-    return mergeExtensionCors(NextResponse.json({ error: 'orders 不能为空' }, { status: 400 }))
+  if (orders.some((order: any) => !order?.orderNo)) {
+    return mergeExtensionCors(
+      NextResponse.json({ error: 'orders 数据格式不正确' }, { status: 400 })
+    )
   }
 
-  await Promise.all(
-    orders.map((order: any) =>
-      prisma.waitlistOrder.upsert({
-        where: { orderNo: order.orderNo },
-        create: {
-          orderNo: order.orderNo,
-          departureDate: new Date(order.departureDate),
-          fromStation: order.fromStation,
-          toStation: order.toStation,
-          trainNumbers: order.trainNumbers,
-          seatType: order.seatType,
-          ticketCount: order.ticketCount,
-          price: order.price,
-          departureTime: order.departureTime,
-          arrivalTime: order.arrivalTime,
-          status: order.status,
-          rawData: order.rawData ?? {},
-        },
-        update: {
-          trainNumbers: order.trainNumbers,
-          status: order.status,
-          rawData: order.rawData ?? {},
-        },
-      })
-    )
-  )
+  await prisma.$transaction(async (tx) => {
+    await tx.waitlistOrder.deleteMany({})
+
+    if (orders.length === 0) return
+
+    await tx.waitlistOrder.createMany({
+      data: orders.map((order: any) => ({
+        orderNo: order.orderNo,
+        departureDate: new Date(order.departureDate),
+        fromStation: order.fromStation,
+        toStation: order.toStation,
+        trainNumbers: order.trainNumbers,
+        seatType: order.seatType,
+        ticketCount: order.ticketCount,
+        price: order.price,
+        departureTime: order.departureTime,
+        arrivalTime: order.arrivalTime,
+        status: order.status,
+        rawData: order.rawData ?? {},
+      })),
+    })
+  })
 
   return mergeExtensionCors(NextResponse.json({ success: true, count: orders.length }))
 }

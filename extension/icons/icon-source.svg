@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="18" y1="14" x2="110" y2="114" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#12A8D8"/>
+      <stop offset="1" stop-color="#1154C8"/>
+    </linearGradient>
+    <linearGradient id="ticket" x1="34" y1="30" x2="94" y2="98" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#EAF7FF"/>
+    </linearGradient>
+  </defs>
+  <rect x="8" y="8" width="112" height="112" rx="28" fill="url(#bg)"/>
+  <path d="M34 30H94V98H34V30Z" fill="url(#ticket)"/>
+  <path d="M34 30H94V42C88.5 42 84 46.5 84 52C84 57.5 88.5 62 94 62V98H34V62C39.5 62 44 57.5 44 52C44 46.5 39.5 42 34 42V30Z" fill="url(#ticket)"/>
+  <path d="M48 52H79" stroke="#CDEAFF" stroke-width="5" stroke-linecap="round"/>
+  <path d="M49 77H79" stroke="#CDEAFF" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="48" cy="52" r="8" fill="#1564DA"/>
+  <circle cx="80" cy="76" r="8" fill="#1564DA"/>
+  <path d="M48 52C62 51 67 61 80 76" stroke="#1564DA" stroke-width="7" stroke-linecap="round"/>
+  <circle cx="48" cy="52" r="3.5" fill="#FFFFFF"/>
+  <circle cx="80" cy="76" r="3.5" fill="#FFFFFF"/>
+  <path d="M52 91H76" stroke="#1564DA" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="88" cy="37" r="11" fill="#FFD24D"/>
+  <path d="M84 37L87 40L93 34" stroke="#1154C8" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

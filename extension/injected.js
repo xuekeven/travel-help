@@ -8,6 +8,10 @@
 ;(function () {
   const INTERCEPT_KEYWORDS = ['/otn/afterNateOrder/queryUnHonourHOrder']
 
+  function notify(type, payload) {
+    window.postMessage({ source: '12306_HELPER', type, payload }, '*')
+  }
+
   const originalOpen = XMLHttpRequest.prototype.open
   const originalSend = XMLHttpRequest.prototype.send
 
@@ -26,6 +30,11 @@
             '*'
           )
         } catch (e) {
+          notify('HELPER_LOG', {
+            level: 'error',
+            message: `解析 XHR 响应失败：${e.message}`,
+            status: 'error',
+          })
           console.warn('[12306助手] 解析 XHR 响应失败：', e.message)
         }
       })
@@ -34,4 +43,11 @@
   }
 
   console.log('[12306助手] XHR 拦截已就绪（main world）')
+  setTimeout(() => {
+    notify('HELPER_LOG', {
+      level: 'info',
+      message: 'XHR 拦截已就绪',
+      status: 'ready',
+    })
+  }, 0)
 })()
