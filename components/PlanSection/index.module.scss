@@ -11,12 +11,26 @@
   align-items: center;
   justify-content: space-between;
   margin-bottom: 16px;
+  gap: 16px;
+
+  .headerTitle {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    min-width: 0;
+  }
 
   h2 {
     margin: 0;
     font-size: 18px;
     font-weight: 600;
     color: #1a1a1a;
+  }
+
+  .rule {
+    color: #8c8c8c;
+    font-size: 12px;
+    line-height: 1.5;
   }
 }
 

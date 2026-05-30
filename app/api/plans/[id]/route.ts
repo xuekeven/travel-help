@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getSaleDate, getDaysUntilSale } from '@/lib/date'
-import type { TravelPlan as PrismaPlan } from '@prisma/client'
+import { getSaleDate, getDaysUntilSale, getAutoPlanStatus } from '@/lib/date'
+import type { PlanStatus, TravelPlan as PrismaPlan } from '@prisma/client'
 
 type Params = { params: Promise<{ id: string }> }
 
 function withSaleInfo(plan: PrismaPlan) {
   return {
     ...plan,
+    status: getAutoPlanStatus(plan.departureDate),
     departureDate: plan.departureDate.toISOString().slice(0, 10),
     createdAt: plan.createdAt.toISOString(),
     updatedAt: plan.updatedAt.toISOString(),
@@ -20,20 +21,30 @@ function withSaleInfo(plan: PrismaPlan) {
 export async function POST(request: NextRequest, { params }: Params) {
   const { id } = await params
   const body = await request.json()
+  const departureDate = body.departureDate ? new Date(body.departureDate) : undefined
 
-  const plan = await prisma.travelPlan.update({
+  const updatedPlan = await prisma.travelPlan.update({
     where: { id },
     data: {
-      ...(body.departureDate && { departureDate: new Date(body.departureDate) }),
+      ...(departureDate && { departureDate }),
       ...(body.holidayName !== undefined && { holidayName: body.holidayName || null }),
       ...(body.fromStation && { fromStation: body.fromStation }),
       ...(body.toStation && { toStation: body.toStation }),
       ...(body.seatType && { seatType: body.seatType }),
       ...(body.ticketCount !== undefined && { ticketCount: body.ticketCount }),
-      ...(body.status && { status: body.status }),
       ...(body.remark !== undefined && { remark: body.remark || null }),
     },
   })
+
+  const status = getAutoPlanStatus(updatedPlan.departureDate) as PlanStatus
+  const plan =
+    updatedPlan.status === status
+      ? updatedPlan
+      : await prisma.travelPlan.update({
+          where: { id },
+          data: { status },
+        })
+
   return NextResponse.json({ data: withSaleInfo(plan) })
 }
 

@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getSaleDate, getDaysUntilSale } from '@/lib/date'
-import type { TravelPlan as PrismaPlan } from '@prisma/client'
+import { getSaleDate, getDaysUntilSale, getAutoPlanStatus } from '@/lib/date'
+import type { PlanStatus, TravelPlan as PrismaPlan } from '@prisma/client'
 
 function withSaleInfo(plan: PrismaPlan) {
   return {
     ...plan,
+    status: getAutoPlanStatus(plan.departureDate),
     departureDate: plan.departureDate.toISOString().slice(0, 10),
     createdAt: plan.createdAt.toISOString(),
     updatedAt: plan.updatedAt.toISOString(),
@@ -23,15 +24,16 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   const body = await request.json()
+  const departureDate = new Date(body.departureDate)
   const plan = await prisma.travelPlan.create({
     data: {
-      departureDate: new Date(body.departureDate),
+      departureDate,
       holidayName: body.holidayName || null,
       fromStation: body.fromStation,
       toStation: body.toStation,
       seatType: body.seatType,
       ticketCount: body.ticketCount ?? 1,
-      status: body.status ?? 'PENDING_SALE',
+      status: getAutoPlanStatus(departureDate) as PlanStatus,
       remark: body.remark || null,
     },
   })

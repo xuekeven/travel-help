@@ -30,12 +30,28 @@ export function getDaysUntilSale(departureDate: Date | string): number {
   return differenceInCalendarDays(new Date(saleDate), new Date(today))
 }
 
+export function getAutoPlanStatus(departureDate: Date | string): 'PENDING_SALE' | 'ON_SALE' {
+  return getDaysUntilSale(departureDate) > 0 ? 'PENDING_SALE' : 'ON_SALE'
+}
+
 /**
  * 将出行日期格式化为通知文本格式：'2026年5月1日 周五'
  */
 export function formatDateForNotify(departureDate: Date | string): string {
   const d = new Date(departureDate)
   return format(d, 'yyyy年M月d日 EEEE', { locale: zhCN })
+}
+
+/** 通知文本使用：2026-06-01 */
+export function formatDateForReminder(departureDate: Date | string): string {
+  const d = new Date(departureDate)
+  return format(d, 'yyyy-MM-dd')
+}
+
+/** 通知文本使用：周一 */
+export function formatWeekdayForReminder(departureDate: Date | string): string {
+  const d = new Date(departureDate)
+  return format(d, 'EEE', { locale: zhCN })
 }
 
 /** 表格展示：2026-06-04 周四 */

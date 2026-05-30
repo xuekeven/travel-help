@@ -1,13 +1,14 @@
 'use client'
-import { useEffect } from 'react'
+import { type PointerEvent as ReactPointerEvent, useEffect, useRef, useState } from 'react'
 import {
   Modal, Form, Input, Select, DatePicker,
   InputNumber, Row, Col, message,
 } from 'antd'
 import dayjs from 'dayjs'
 import type { TravelPlan } from '@/types'
-import { SEAT_TYPE_LABELS, PLAN_STATUS_LABELS } from '@/types'
+import { SEAT_TYPE_LABELS } from '@/types'
 import { withBasePath } from '@/lib/with-base-path'
+import PlanStatusTag, { getPlanStatusForDepartureDate } from './PlanStatusTag'
 
 interface Props {
   open: boolean
@@ -17,30 +18,68 @@ interface Props {
 }
 
 const SEAT_OPTIONS = Object.entries(SEAT_TYPE_LABELS).map(([value, label]) => ({ value, label }))
-const STATUS_OPTIONS = Object.entries(PLAN_STATUS_LABELS).map(([value, label]) => ({ value, label }))
 
 export default function PlanForm({ open, editingPlan, onSuccess, onCancel }: Props) {
   const [form] = Form.useForm()
   const isEdit = !!editingPlan
+  const [modalOffset, setModalOffset] = useState({ x: 0, y: 0 })
+  const dragRef = useRef({
+    startX: 0,
+    startY: 0,
+    originX: 0,
+    originY: 0,
+  })
 
   // 监听出行日期，实时计算开售日期
   const departureDate = Form.useWatch('departureDate', form)
   const saleDateDisplay = departureDate
     ? dayjs(departureDate).subtract(14, 'day').format('YYYY-MM-DD')
     : ''
+  const status = departureDate ? getPlanStatusForDepartureDate(departureDate) : null
 
   useEffect(() => {
     if (!open) return
+    setModalOffset({ x: 0, y: 0 })
     if (editingPlan) {
+      const { status: _status, ...planFields } = editingPlan
       form.setFieldsValue({
-        ...editingPlan,
+        ...planFields,
         departureDate: dayjs(editingPlan.departureDate),
       })
     } else {
       form.resetFields()
-      form.setFieldsValue({ ticketCount: 1, status: 'PENDING_SALE' })
+      form.setFieldsValue({ ticketCount: 1 })
     }
   }, [open, editingPlan, form])
+
+  const handleTitlePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (event.button !== 0) return
+    event.preventDefault()
+
+    dragRef.current = {
+      startX: event.clientX,
+      startY: event.clientY,
+      originX: modalOffset.x,
+      originY: modalOffset.y,
+    }
+
+    const handlePointerMove = (moveEvent: PointerEvent) => {
+      setModalOffset({
+        x: dragRef.current.originX + moveEvent.clientX - dragRef.current.startX,
+        y: dragRef.current.originY + moveEvent.clientY - dragRef.current.startY,
+      })
+    }
+
+    const handlePointerUp = () => {
+      window.removeEventListener('pointermove', handlePointerMove)
+      window.removeEventListener('pointerup', handlePointerUp)
+      window.removeEventListener('pointercancel', handlePointerUp)
+    }
+
+    window.addEventListener('pointermove', handlePointerMove)
+    window.addEventListener('pointerup', handlePointerUp)
+    window.addEventListener('pointercancel', handlePointerUp)
+  }
 
   const handleOk = async () => {
     const values = await form.validateFields()
@@ -65,7 +104,14 @@ export default function PlanForm({ open, editingPlan, onSuccess, onCancel }: Pro
 
   return (
     <Modal
-      title={isEdit ? '编辑出行计划' : '新增出行计划'}
+      title={
+        <div
+          onPointerDown={handleTitlePointerDown}
+          style={{ cursor: 'move', userSelect: 'none' }}
+        >
+          {isEdit ? '编辑购票计划' : '新增购票计划'}
+        </div>
+      }
       open={open}
       onOk={handleOk}
       onCancel={onCancel}
@@ -74,6 +120,11 @@ export default function PlanForm({ open, editingPlan, onSuccess, onCancel }: Pro
       destroyOnHidden
       width={680}
       centered
+      modalRender={(modal) => (
+        <div style={{ transform: `translate(${modalOffset.x}px, ${modalOffset.y}px)` }}>
+          {modal}
+        </div>
+      )}
       styles={{
         body: {
           // 超过可视区高度时，body 可滚动；正常居中展示
@@ -84,7 +135,7 @@ export default function PlanForm({ open, editingPlan, onSuccess, onCancel }: Pro
       }}
     >
       <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
-        {/* 第一行：出行日期 + 开售日期 */}
+        {/* 第一行：出行日期 + 节假日信息 */}
         <Row gutter={16}>
           <Col span={12}>
             <Form.Item
@@ -96,6 +147,15 @@ export default function PlanForm({ open, editingPlan, onSuccess, onCancel }: Pro
             </Form.Item>
           </Col>
           <Col span={12}>
+            <Form.Item name="holidayName" label="节假日信息">
+              <Input placeholder="如：劳动节、国庆节" />
+            </Form.Item>
+          </Col>
+        </Row>
+
+        {/* 第二行：开售日期 + 状态 */}
+        <Row gutter={16}>
+          <Col span={12}>
             <Form.Item label="开售日期">
               <Input
                 value={saleDateDisplay || '选择出行日期后自动计算'}
@@ -104,9 +164,28 @@ export default function PlanForm({ open, editingPlan, onSuccess, onCancel }: Pro
               />
             </Form.Item>
           </Col>
+          <Col span={12}>
+            <Form.Item label="状态">
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  height: 32,
+                  padding: '0 11px',
+                  border: '1px solid #d9d9d9',
+                  borderRadius: 6,
+                  background: '#f5f5f5',
+                }}
+              >
+                {status ? <PlanStatusTag status={status} /> : (
+                  <span style={{ color: '#bfbfbf' }}>选择出行日期后自动计算</span>
+                )}
+              </div>
+            </Form.Item>
+          </Col>
         </Row>
 
-        {/* 第二行：始发站 + 终到站 */}
+        {/* 第三行：始发站 + 终到站 */}
         <Row gutter={16}>
           <Col span={12}>
             <Form.Item
@@ -128,7 +207,7 @@ export default function PlanForm({ open, editingPlan, onSuccess, onCancel }: Pro
           </Col>
         </Row>
 
-        {/* 第三行：座位类型 + 购票张数 */}
+        {/* 第四行：座位类型 + 购票张数 */}
         <Row gutter={16}>
           <Col span={12}>
             <Form.Item
@@ -146,22 +225,8 @@ export default function PlanForm({ open, editingPlan, onSuccess, onCancel }: Pro
           </Col>
         </Row>
 
-        {/* 第四行：节假日名称 + 状态 */}
-        <Row gutter={16}>
-          <Col span={12}>
-            <Form.Item name="holidayName" label="节假日名称（可选）">
-              <Input placeholder="如：劳动节、国庆节" />
-            </Form.Item>
-          </Col>
-          <Col span={12}>
-            <Form.Item name="status" label="状态">
-              <Select options={STATUS_OPTIONS} placeholder="请选择" />
-            </Form.Item>
-          </Col>
-        </Row>
-
         {/* 第五行：备注（占满整行） */}
-        <Form.Item name="remark" label="备注（可选）">
+        <Form.Item name="remark" label="备注">
           <Input.TextArea rows={2} placeholder="可填写备注信息" />
         </Form.Item>
       </Form>

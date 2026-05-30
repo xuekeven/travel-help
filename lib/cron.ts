@@ -1,7 +1,7 @@
 import { schedule } from 'node-cron'
 import { addDays } from 'date-fns'
 import { prisma } from '@/lib/prisma'
-import { getTodayCN, formatDateForNotify } from '@/lib/date'
+import { getTodayCN, formatDateForReminder, formatWeekdayForReminder } from '@/lib/date'
 import { sendWeComMessage } from '@/lib/notify'
 import type { TravelPlan } from '@prisma/client'
 
@@ -9,9 +9,9 @@ function buildMessage(
   plan: TravelPlan,
   timing: '今天' | '明天'
 ): string {
-  const dateStr = formatDateForNotify(plan.departureDate)
-  const holiday = plan.holidayName ? `（${plan.holidayName}）` : ''
-  return `你预定了要买${dateStr}${holiday}${plan.fromStation}到${plan.toStation}的火车票，${timing}就要开售了，请关注`
+  const dateStr = formatDateForReminder(plan.departureDate)
+  const weekday = formatWeekdayForReminder(plan.departureDate)
+  return `【${dateStr}】【${weekday}】【${plan.fromStation}】到【${plan.toStation}】的火车票，${timing}就要开售了，请关注`
 }
 
 async function runDailyReminder() {
@@ -29,13 +29,11 @@ async function runDailyReminder() {
       prisma.travelPlan.findMany({
         where: {
           departureDate: todaySaleTarget,
-          status: { in: ['PENDING_SALE', 'ON_SALE'] },
         },
       }),
       prisma.travelPlan.findMany({
         where: {
           departureDate: tomorrowSaleTarget,
-          status: { in: ['PENDING_SALE', 'ON_SALE'] },
         },
       }),
     ])

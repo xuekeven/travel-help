@@ -10,10 +10,6 @@ export type SeatType =
 export type PlanStatus =
   | 'PENDING_SALE'
   | 'ON_SALE'
-  | 'WAITLISTED'
-  | 'SUCCESS'
-  | 'FAILED'
-  | 'CANCELLED'
 
 export interface TravelPlan {
   id: string
@@ -82,17 +78,9 @@ export const SEAT_TYPE_LABELS: Record<SeatType, string> = {
 export const PLAN_STATUS_LABELS: Record<PlanStatus, string> = {
   PENDING_SALE: '待开售',
   ON_SALE: '已开售',
-  WAITLISTED: '候补中',
-  SUCCESS: '购票成功',
-  FAILED: '购票失败',
-  CANCELLED: '已取消',
 }
 
 export const PLAN_STATUS_COLORS: Record<PlanStatus, string> = {
   PENDING_SALE: 'default',
   ON_SALE: 'processing',
-  WAITLISTED: 'warning',
-  SUCCESS: 'success',
-  FAILED: 'error',
-  CANCELLED: 'default',
 }
