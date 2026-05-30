@@ -54,30 +54,37 @@ export default function WaitlistSection() {
   return (
     <section className={styles.section}>
       <div className={styles.header}>
-        <h2>
-          候补订单
+        <div className={styles.headerTop}>
+          <div className={styles.headerTitle}>
+            <h2>候补订单</h2>
+            <span className={styles.rule}>
+              安装 Chrome 插件后，打开 12306 候补订单页面即可自动同步；未成功订单会在出行前 3 天、2 天、1 天的 00:00 提醒。
+            </span>
+          </div>
           {lastSynced && (
             <Typography.Text
               type="secondary"
-              style={{ fontSize: 12, fontWeight: 400, marginLeft: 12 }}
+              className={styles.lastSynced}
             >
               最近同步：
               {formatDateTimeShanghai(lastSynced)}
             </Typography.Text>
           )}
-        </h2>
-        <Radio.Group
-          value={sortOption}
-          onChange={(e) => setSortOption(e.target.value)}
-          size="small"
-          buttonStyle="solid"
-        >
-          {SORT_OPTIONS.map((opt) => (
-            <Radio.Button key={opt.value} value={opt.value}>
-              {opt.label}
-            </Radio.Button>
-          ))}
-        </Radio.Group>
+        </div>
+        <div className={styles.filterRow}>
+          <Radio.Group
+            value={sortOption}
+            onChange={(e) => setSortOption(e.target.value)}
+            size="small"
+            buttonStyle="solid"
+          >
+            {SORT_OPTIONS.map((opt) => (
+              <Radio.Button key={opt.value} value={opt.value}>
+                {opt.label}
+              </Radio.Button>
+            ))}
+          </Radio.Group>
+        </div>
       </div>
 
       <Spin spinning={loading}>

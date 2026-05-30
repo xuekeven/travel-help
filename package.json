@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 3005",
+    "dev-mock": "MOCK_DATA=1 next dev -p 3006",
     "build": "next build",
     "start": "next start",
     "postinstall": "prisma generate"

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { mergeExtensionCors, optionsExtensionCors } from '@/lib/extension-cors'
+import { isMockDataMode, replaceMockWaitlistOrders } from '@/lib/mock-data'
 
 export function OPTIONS() {
   return optionsExtensionCors()
@@ -8,7 +9,7 @@ export function OPTIONS() {
 
 export async function POST(request: NextRequest) {
   const token = request.headers.get('x-sync-token')
-  if (token !== process.env.EXTENSION_SYNC_TOKEN) {
+  if (!isMockDataMode() && token !== process.env.EXTENSION_SYNC_TOKEN) {
     return mergeExtensionCors(NextResponse.json({ error: 'Unauthorized' }, { status: 401 }))
   }
 
@@ -19,6 +20,11 @@ export async function POST(request: NextRequest) {
     return mergeExtensionCors(
       NextResponse.json({ error: 'orders 数据格式不正确' }, { status: 400 })
     )
+  }
+
+  if (isMockDataMode()) {
+    const count = replaceMockWaitlistOrders(orders)
+    return mergeExtensionCors(NextResponse.json({ success: true, count }))
   }
 
   await prisma.$transaction(async (tx) => {

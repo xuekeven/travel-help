@@ -1,18 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { buildNeedSegmentsForOrder } from '@/lib/waitlist-need-segments'
+import { getMockStore, isMockDataMode } from '@/lib/mock-data'
 import type { WaitlistGroup } from '@/types'
 
 export async function GET(request: NextRequest) {
   const sortBy = request.nextUrl.searchParams.get('sortBy') ?? 'departureTime'
   const sortDir = (request.nextUrl.searchParams.get('sortDir') ?? 'asc') as 'asc' | 'desc'
 
-  const orders = await prisma.waitlistOrder.findMany({
-    orderBy:
-      sortBy === 'price'
-        ? [{ departureDate: 'asc' }, { price: sortDir }]
-        : [{ departureDate: 'asc' }, { departureTime: sortDir }],
-  })
+  const orders = isMockDataMode()
+    ? [...getMockStore().waitlistOrders].sort((a, b) => {
+        const dateDiff = a.departureDate.getTime() - b.departureDate.getTime()
+        if (dateDiff !== 0) return dateDiff
+
+        const sortDiff =
+          sortBy === 'price'
+            ? Number(a.price) - Number(b.price)
+            : a.departureTime.localeCompare(b.departureTime)
+
+        return sortDir === 'asc' ? sortDiff : -sortDiff
+      })
+    : await prisma.waitlistOrder.findMany({
+        orderBy:
+          sortBy === 'price'
+            ? [{ departureDate: 'asc' }, { price: sortDir }]
+            : [{ departureDate: 'asc' }, { departureTime: sortDir }],
+      })
 
   const groupMap = new Map<string, WaitlistGroup>()
   for (const order of orders) {

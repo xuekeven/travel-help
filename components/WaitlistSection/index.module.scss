@@ -8,15 +8,48 @@
 
 .header {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  align-items: stretch;
   margin-bottom: 16px;
+  gap: 12px;
+
+  .headerTop {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .headerTitle {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    min-width: 0;
+  }
 
   h2 {
     margin: 0;
     font-size: 18px;
     font-weight: 600;
     color: #1a1a1a;
+    white-space: nowrap;
+  }
+
+  .rule {
+    color: #8c8c8c;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  .lastSynced {
+    flex-shrink: 0;
+    font-size: 12px;
+    font-weight: 400;
+  }
+
+  .filterRow {
+    display: flex;
+    justify-content: flex-start;
   }
 }
 
