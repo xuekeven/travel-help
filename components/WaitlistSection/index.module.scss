@@ -51,6 +51,69 @@
     display: flex;
     justify-content: flex-start;
   }
+
+  .sortControls {
+    display: inline-flex;
+    overflow: hidden;
+    border: 1px solid #d9d9d9;
+    border-radius: 6px;
+    background: #fff;
+  }
+
+  .sortButton {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 32px;
+    padding: 0 12px;
+    border: 0;
+    border-right: 1px solid #d9d9d9;
+    background: #fff;
+    color: #1a1a1a;
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+
+    &:last-child {
+      border-right: 0;
+    }
+
+    &:hover {
+      color: #1677ff;
+    }
+
+    &.active {
+      background: #1677ff;
+      color: #fff;
+    }
+  }
+
+  .sortIcon {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 2px;
+    width: 8px;
+  }
+
+  .triangle {
+    width: 0;
+    height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    opacity: 0.45;
+  }
+
+  .up {
+    border-bottom: 5px solid currentColor;
+  }
+
+  .down {
+    border-top: 5px solid currentColor;
+  }
+
+  .triangle.active {
+    opacity: 1;
+  }
 }
 
 .group {

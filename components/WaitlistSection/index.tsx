@@ -8,12 +8,11 @@ import WaitlistGroupCard from './WaitlistGroup'
 import styles from './index.module.scss'
 
 type SortOption = 'time_asc' | 'time_desc' | 'price_asc' | 'price_desc'
+type SortField = 'time' | 'price'
 
-const SORT_OPTIONS: { value: SortOption; label: string }[] = [
-  { value: 'time_asc', label: '出发 早→晚' },
-  { value: 'time_desc', label: '出发 晚→早' },
-  { value: 'price_asc', label: '票价 低→高' },
-  { value: 'price_desc', label: '票价 高→低' },
+const SORT_OPTIONS: { field: SortField; label: string }[] = [
+  { field: 'time', label: '出发时间' },
+  { field: 'price', label: '订单票价' },
 ]
 
 function parseSortOption(opt: SortOption): { sortBy: string; sortDir: string } {
@@ -24,11 +23,27 @@ function parseSortOption(opt: SortOption): { sortBy: string; sortDir: string } {
   }
 }
 
+function getSortOption(field: SortField, current: SortOption): SortOption {
+  const [currentField, currentDir] = current.split('_') as [SortField, 'asc' | 'desc']
+  const nextDir = currentField === field && currentDir === 'asc' ? 'desc' : 'asc'
+  return `${field}_${nextDir}`
+}
+
+function SortIcon({ active, direction }: { active: boolean; direction: 'asc' | 'desc' }) {
+  return (
+    <span className={styles.sortIcon} aria-hidden>
+      <span className={`${styles.triangle} ${styles.up} ${active && direction === 'asc' ? styles.active : ''}`} />
+      <span className={`${styles.triangle} ${styles.down} ${active && direction === 'desc' ? styles.active : ''}`} />
+    </span>
+  )
+}
+
 export default function WaitlistSection() {
   const [groups, setGroups] = useState<WaitlistGroup[]>([])
   const [loading, setLoading] = useState(false)
   const [sortOption, setSortOption] = useState<SortOption>('time_asc')
   const [lastSynced, setLastSynced] = useState<string | null>(null)
+  const [activeField, activeDirection] = sortOption.split('_') as [SortField, 'asc' | 'desc']
 
   const fetchOrders = useCallback(async () => {
     setLoading(true)
@@ -72,18 +87,22 @@ export default function WaitlistSection() {
           )}
         </div>
         <div className={styles.filterRow}>
-          <Radio.Group
-            value={sortOption}
-            onChange={(e) => setSortOption(e.target.value)}
-            size="small"
-            buttonStyle="solid"
-          >
-            {SORT_OPTIONS.map((opt) => (
-              <Radio.Button key={opt.value} value={opt.value}>
-                {opt.label}
-              </Radio.Button>
-            ))}
-          </Radio.Group>
+          <div className={styles.sortControls} role="group" aria-label="候补订单排序">
+            {SORT_OPTIONS.map((opt) => {
+              const active = activeField === opt.field
+              return (
+                <button
+                  key={opt.field}
+                  type="button"
+                  className={`${styles.sortButton} ${active ? styles.active : ''}`}
+                  onClick={() => setSortOption(getSortOption(opt.field, sortOption))}
+                >
+                  <span>{opt.label}</span>
+                  <SortIcon active={active} direction={activeDirection} />
+                </button>
+              )
+            })}
+          </div>
         </div>
       </div>
 
