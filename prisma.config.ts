@@ -1,3 +1,4 @@
+import 'dotenv/config'
 import { defineConfig } from 'prisma/config'
 
 // Prisma 7.x 配置文件
