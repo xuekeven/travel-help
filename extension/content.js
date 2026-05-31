@@ -62,14 +62,14 @@ const state = {
   ui: null,
   position: {
     left: null,
-    top: 16,
-    right: 16,
+    top: 130,
+    right: 100,
   },
 }
 
 mountWhenReady()
 setStatus(STATUS.INIT)
-addLog('info', 'Content script 已就绪，等待候补订单数据...', STATUS.READY)
+addLog('info', 'Content script 已就绪，等待订单数据...', STATUS.READY)
 
 window.addEventListener('message', async (event) => {
   if (event.source !== window) return

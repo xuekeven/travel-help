@@ -6,6 +6,10 @@
  * 将数据通过 postMessage 传给 content.js（Isolated World）。
  */
 ;(function () {
+  const IGNORED_PATHS = new Set([
+    '/otn/queryOrder/queryMyOrderNoComplete',
+  ])
+
   const INTERCEPTORS = [
     {
       keyword: '/otn/afterNateOrder/queryUnHonourHOrder',
@@ -13,9 +17,26 @@
     },
     {
       keyword: '/otn/queryOrder/queryMyOrder',
+      exactPath: true,
       type: 'TRAVEL_ORDERS_DATA',
     },
   ]
+
+  function matchesInterceptor(url, interceptor) {
+    const pathname = getPathname(url)
+    if (IGNORED_PATHS.has(pathname)) return false
+    if (!interceptor.exactPath) return url.includes(interceptor.keyword)
+    if (pathname) return pathname === interceptor.keyword
+    return url.split('?')[0] === interceptor.keyword
+  }
+
+  function getPathname(url) {
+    try {
+      return new URL(url, window.location.origin).pathname
+    } catch (e) {
+      return ''
+    }
+  }
 
   function notify(type, payload) {
     window.postMessage({ source: '12306_HELPER', type, payload }, '*')
@@ -30,7 +51,7 @@
   }
 
   XMLHttpRequest.prototype.send = function (...args) {
-    const interceptor = INTERCEPTORS.find((item) => this._interceptUrl.includes(item.keyword))
+    const interceptor = INTERCEPTORS.find((item) => matchesInterceptor(this._interceptUrl, item))
     if (interceptor) {
       this.addEventListener('load', function () {
         try {

@@ -252,12 +252,16 @@ function parseDateOnly(value: unknown): Date | null {
     const year = Number(text.slice(0, 4))
     const month = Number(text.slice(4, 6))
     const day = Number(text.slice(6, 8))
-    return new Date(year, month - 1, day)
+    return createUtcDateOnly(year, month, day)
   }
   const datePart = text.slice(0, 10)
   const [year, month, day] = datePart.split('-').map(Number)
   if (!year || !month || !day) return null
-  return new Date(year, month - 1, day)
+  return createUtcDateOnly(year, month, day)
+}
+
+function createUtcDateOnly(year: number, month: number, day: number): Date {
+  return new Date(Date.UTC(year, month - 1, day))
 }
 
 function parseDateTime(value: unknown): Date | null {
@@ -270,9 +274,9 @@ function parseDateTime(value: unknown): Date | null {
 }
 
 function formatDateOnly(date: Date): string {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
+  const year = date.getUTCFullYear()
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0')
+  const day = String(date.getUTCDate()).padStart(2, '0')
   return `${year}-${month}-${day}`
 }
 
