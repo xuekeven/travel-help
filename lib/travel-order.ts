@@ -216,13 +216,14 @@ export function buildTravelOrderReminder(order: {
   passengerNames: string[]
   seatTypeNames: string[]
   seatNames: string[]
-}, daysUntilDeparture: 1 | 2 | 3): string {
+}, daysUntilDeparture: 0 | 1 | 2): string {
   const dateStr = formatDateOnly(order.departureDate)
   const weekday = formatWeekdayForReminder(order.departureDate)
   const passengers = order.passengerNames.length > 0 ? order.passengerNames.join('、') : '未知乘车人'
   const seatType = dedupeJoin(order.seatTypeNames) || '未知座位类型'
   const seatNo = dedupeJoin(order.seatNames) || '未知座位号'
-  return `【${dateStr}】【${weekday}】【${order.departureTime || '--:--'}】【${order.fromStation}】到【${order.toStation}】的【${order.trainCode || '未知车次'}】次列车还有${daysUntilDeparture}天就要出行了，乘车人：【${passengers}】，座位：【${seatType} ${seatNo}】，请提前安排出行`
+  const timing = daysUntilDeparture === 0 ? '今天就要出行了' : `还有${daysUntilDeparture}天就要出行了`
+  return `【${dateStr}】【${weekday}】【${order.departureTime || '--:--'}】【${order.fromStation}】到【${order.toStation}】的【${order.trainCode || '未知车次'}】次列车${timing}，乘车人：【${passengers}】，座位：【${seatType} ${seatNo}】，请提前安排出行`
 }
 
 export function isActiveTravelOrder(order: {

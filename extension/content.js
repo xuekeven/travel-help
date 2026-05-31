@@ -1,7 +1,7 @@
 /**
  * 12306 买票助手 · Content Script（Isolated World）
  *
- * 监听 injected.js（main world）通过 postMessage 传来的候补订单数据，
+ * 监听 injected.js（main world）通过 postMessage 传来的候补订单/出行订单数据，
  * 使用 chrome.storage.sync 读取配置后同步到助手服务，并在页面右上角展示实时状态。
  */
 
@@ -17,25 +17,25 @@ const STATUS = {
   READY: {
     key: 'ready',
     label: '已就绪',
-    detail: '等待候补订单数据',
+    detail: '等待订单数据',
     tone: '#1677ff',
   },
   SYNCING: {
     key: 'syncing',
     label: '同步中',
-    detail: '正在同步候补订单',
+    detail: '正在同步订单',
     tone: '#0ea5e9',
   },
   EMPTY: {
     key: 'empty',
-    label: '无候补',
-    detail: '候补订单列表为空',
+    label: '无数据',
+    detail: '订单列表为空',
     tone: '#8b5cf6',
   },
   SUCCESS: {
     key: 'success',
     label: '已同步',
-    detail: '候补订单已同步',
+    detail: '订单已同步',
     tone: '#16a34a',
   },
   WARNING: {

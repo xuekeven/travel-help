@@ -149,7 +149,7 @@ export default function PlanSection() {
         <div className={styles.headerTitle}>
           <h2>购票计划</h2>
           <span className={styles.rule}>
-            开售日期按出行日期提前 14 天自动计算；系统会在开售前一天和开售当天 00:00 发送提醒。
+            开售日期按出行日期提前 14 天自动计算；系统会在开售前 1 天和开售当天 00:00 发送提醒。
           </span>
         </div>
         <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>

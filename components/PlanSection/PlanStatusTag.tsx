@@ -17,7 +17,7 @@ export default function PlanStatusTag({ status }: { status: PlanStatus }) {
   return (
     <Tag
       color={PLAN_STATUS_COLORS[status]}
-      bordered={false}
+      variant="filled"
       style={{
         background: 'transparent',
         fontSize: 'inherit',

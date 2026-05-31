@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "12306 买票助手",
   "version": "1.0.0",
-  "description": "自动同步候补订单到本地助手服务",
+  "description": "自动同步候补订单和未出行订单到本地助手服务",
   "permissions": ["storage"],
   "background": {
     "service_worker": "background.js"

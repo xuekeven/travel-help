@@ -3,7 +3,8 @@ import { useCallback, useEffect, useState } from 'react'
 import { Empty, Spin, Typography } from 'antd'
 import type { TravelOrder } from '@/types'
 import { withBasePath } from '@/lib/with-base-path'
-import { formatDateTimeShanghai } from '@/lib/date'
+import { toZonedTime } from 'date-fns-tz'
+import { createDateTimeShanghai, formatDateTimeShanghai, TIMEZONE } from '@/lib/date'
 import SortPillControls from '@/components/SortPillControls'
 import styles from './index.module.scss'
 
@@ -13,6 +14,51 @@ function joinUnique(values: string[]) {
 
 function formatPrice(price: number) {
   return `¥${Number(price).toFixed(1)}`
+}
+
+function formatRefundFee(price: number, rate: number) {
+  if (rate === 0) return '0元'
+  const rawFee = Math.max(price * rate, 2)
+  const roundedFee = Math.round(rawFee * 2) / 2
+  return `${Number.isInteger(roundedFee) ? roundedFee.toFixed(0) : roundedFee.toFixed(1)}元`
+}
+
+function parseDepartureDateTime(order: TravelOrder) {
+  return createDateTimeShanghai(order.departureDate, order.departureTime)
+}
+
+function formatRefundDeadline(date: Date) {
+  const zoned = toZonedTime(date, TIMEZONE)
+  return `${zoned.getMonth() + 1}月${zoned.getDate()}号${zoned.getHours()}点${String(zoned.getMinutes()).padStart(2, '0')}分`
+}
+
+function addHours(date: Date, hours: number) {
+  return new Date(date.getTime() + hours * 60 * 60 * 1000)
+}
+
+function getRefundFeeRows(order: TravelOrder) {
+  const departureAt = parseDepartureDateTime(order)
+  if (!departureAt) return []
+  const now = Date.now()
+
+  return [
+    {
+      deadline: addHours(departureAt, -8 * 24),
+      fee: formatRefundFee(order.totalPrice, 0),
+    },
+    {
+      deadline: addHours(departureAt, -48),
+      fee: formatRefundFee(order.totalPrice, 0.05),
+    },
+    {
+      deadline: addHours(departureAt, -24),
+      fee: formatRefundFee(order.totalPrice, 0.1),
+    },
+    {
+      deadline: departureAt,
+      fee: formatRefundFee(order.totalPrice, 0.2),
+    },
+  ].filter((row) => row.deadline.getTime() > now)
 }
 
 function getSeatTypeLabel(order: TravelOrder) {
@@ -41,6 +87,8 @@ function getPassengers(order: TravelOrder) {
 }
 
 function OrderCard({ order }: { order: TravelOrder }) {
+  const refundFeeRows = getRefundFeeRows(order)
+
   return (
     <article className={styles.orderCard}>
       <div className={styles.orderMeta}>
@@ -71,6 +119,17 @@ function OrderCard({ order }: { order: TravelOrder }) {
         <div className={styles.priceCell}>
           <div>{getTicketTypeLabel(order)}</div>
           <strong>{formatPrice(order.totalPrice)}</strong>
+        </div>
+        <div className={styles.refundFeeCell}>
+          {refundFeeRows.length > 0 ? (
+            refundFeeRows.map((row) => (
+              <div key={row.deadline.toISOString()}>
+                {formatRefundDeadline(row.deadline)}前退票费{row.fee}
+              </div>
+            ))
+          ) : (
+            '-'
+          )}
         </div>
       </div>
     </article>
@@ -106,14 +165,9 @@ export default function TravelOrderSection() {
           <div className={styles.headerTitle}>
             <h2>出行订单</h2>
             <span className={styles.rule}>
-              安装 Chrome 插件后，打开 12306 未出行订单页面即可自动同步；系统会在出行前 3 天、2 天、1 天的 00:00 发送出行提醒。
+              安装 Chrome 插件后，打开 12306 未出行订单页面即可自动同步；系统会在出行前 2 天、1 天和当天的 00:00 发送出行提醒。
             </span>
           </div>
-          {lastSynced && (
-            <Typography.Text type="secondary" className={styles.lastSynced}>
-              最近同步：{formatDateTimeShanghai(lastSynced)}
-            </Typography.Text>
-          )}
         </div>
         <div className={styles.sortRow}>
           <SortPillControls
@@ -128,6 +182,11 @@ export default function TravelOrderSection() {
               },
             ]}
           />
+          {lastSynced && (
+            <Typography.Text type="secondary" className={styles.lastSynced}>
+              最近同步：{formatDateTimeShanghai(lastSynced)}
+            </Typography.Text>
+          )}
         </div>
       </div>
 
@@ -139,7 +198,7 @@ export default function TravelOrderSection() {
                 暂无出行订单数据
                 <br />
                 <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                  请在 Chrome 中安装插件，打开 12306 未出行订单页面即可自动同步
+                  请在 Chrome 中安装插件，打开 12306 未出行订单页面即可自动同步，系统会在出行前 2 天、1 天和当天 00:00 发送提醒
                 </Typography.Text>
               </span>
             }
@@ -151,6 +210,7 @@ export default function TravelOrderSection() {
               <span>旅客信息</span>
               <span>席位信息</span>
               <span>票价</span>
+              <span>退票费</span>
             </div>
             <div className={styles.orderList}>
               {orders.map((order) => (

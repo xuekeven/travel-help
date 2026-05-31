@@ -15,10 +15,11 @@ function buildPlanMessage(
   return `【${dateStr}】【${weekday}】【${plan.fromStation}】到【${plan.toStation}】的火车票，${timing}就要开售了，请关注`
 }
 
-function buildWaitlistMessage(order: WaitlistOrder, daysUntilDeparture: 1 | 2 | 3): string {
+function buildWaitlistMessage(order: WaitlistOrder, daysUntilDeparture: 0 | 1 | 2): string {
   const dateStr = formatDateForReminder(order.departureDate)
   const weekday = formatWeekdayForReminder(order.departureDate)
-  return `【${dateStr}】【${weekday}】【${order.fromStation}】到【${order.toStation}】的候补订单还没有候补成功，还有${daysUntilDeparture}天就要出行了，请考虑【买长乘短、买短乘长、更换交通方式】等方案`
+  const timing = daysUntilDeparture === 0 ? '今天就要出行了' : `还有${daysUntilDeparture}天就要出行了`
+  return `【${dateStr}】【${weekday}】【${order.fromStation}】到【${order.toStation}】的候补订单还没有候补成功，${timing}，请考虑【买长乘短、买短乘长、更换交通方式】等方案`
 }
 
 function isPendingWaitlistOrder(order: WaitlistOrder): boolean {
@@ -35,8 +36,8 @@ async function runDailyReminder() {
     const todaySaleTarget = addDays(new Date(today), 14)
     // 明天开售：出行日期 = 今天 + 15 天
     const tomorrowSaleTarget = addDays(new Date(today), 15)
-    const waitlistTargets = [1, 2, 3] as const
-    const travelOrderTargets = [1, 2, 3] as const
+    const waitlistTargets = [0, 1, 2] as const
+    const travelOrderTargets = [0, 1, 2] as const
 
     const [todayPlans, tomorrowPlans, ...reminderResults] = await Promise.all([
       prisma.travelPlan.findMany({

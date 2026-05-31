@@ -65,18 +65,9 @@ export default function WaitlistSection() {
           <div className={styles.headerTitle}>
             <h2>候补订单</h2>
             <span className={styles.rule}>
-              安装 Chrome 插件后，打开 12306 候补订单页面即可自动同步；未成功订单会在出行前 3 天、2 天、1 天的 00:00 提醒。
+              安装 Chrome 插件后，打开 12306 候补订单页面即可自动同步；未候补成功的订单系统会在出行前 2 天、1 天和当天的 00:00 提醒。
             </span>
           </div>
-          {lastSynced && (
-            <Typography.Text
-              type="secondary"
-              className={styles.lastSynced}
-            >
-              最近同步：
-              {formatDateTimeShanghai(lastSynced)}
-            </Typography.Text>
-          )}
         </div>
         <div className={styles.filterRow}>
           <SortPillControls
@@ -92,6 +83,15 @@ export default function WaitlistSection() {
               }
             })}
           />
+          {lastSynced && (
+            <Typography.Text
+              type="secondary"
+              className={styles.lastSynced}
+            >
+              最近同步：
+              {formatDateTimeShanghai(lastSynced)}
+            </Typography.Text>
+          )}
         </div>
       </div>
 
@@ -103,7 +103,7 @@ export default function WaitlistSection() {
                 暂无候补订单数据
                 <br />
                 <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                  请在 Chrome 中安装插件，打开 12306 候补订单页面即可自动同步
+                  请在 Chrome 中安装插件，打开 12306 候补订单页面即可自动同步，系统会在出行前 2 天、1 天和当天 00:00 提醒
                 </Typography.Text>
               </span>
             }

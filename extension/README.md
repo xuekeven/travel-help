@@ -21,12 +21,12 @@
 ## 使用方式
 
 1. 登录 12306（<https://kyfw.12306.cn>）
-2. 进入「候补订单」页面（路径含 `/otn/afterNate/`）
+2. 进入「候补订单」页面，或进入「火车票订单」里的「未出行订单」页面
 3. 页面加载完成后插件自动拦截接口响应并同步
-4. 打开 Chrome DevTools Console，看到 `[12306助手] ✅ 已同步 N 条候补订单` 表示成功
-5. 刷新助手页面即可看到最新候补订单数据
+4. 打开 Chrome DevTools Console，看到 `[12306助手] ✅ 已同步 N 条候补订单` 或 `[12306助手] ✅ 已同步 N 条出行订单` 表示成功
+5. 刷新助手页面即可看到最新候补订单或出行订单数据
 
-## 接口字段说明（已通过实际抓包验证 ✅）
+## 候补订单接口字段说明（已通过实际抓包验证 ✅）
 
 - **接口**：`POST /otn/afterNateOrder/queryUnHonourHOrder`
 - **页面**：`https://kyfw.12306.cn/otn/view/lineUp_order.html`
@@ -47,3 +47,13 @@
 | `seatType` | `needs[0].seat_name` | "二等座" 等中文名 |
 | `departureTime` | `needs[0].start_time` | "HH:mm" |
 | `arrivalTime` | `needs[0].arrive_time` | "HH:mm" |
+
+## 未出行订单接口说明
+
+- **接口**：`POST /otn/queryOrder/queryMyOrder`
+- **页面**：`https://kyfw.12306.cn/otn/view/train_order.html` 的「未出行订单」页签
+- **数据路径**：`response.data.OrderDTODataList[]`
+
+插件会将 `OrderDTODataList` 原始订单同步给本地服务，由服务端解析并按“订单”存储。同步策略是全量替换：当前接口返回空数组时，也会同步空数据并清空本地出行订单表。
+
+注意：`POST /otn/queryOrder/queryMyOrderNoComplete` 是「未完成订单」接口，不是「未出行订单」，插件会明确忽略该接口。
