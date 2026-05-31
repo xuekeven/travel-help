@@ -65,6 +65,54 @@ export interface WaitlistGroup {
   orders: WaitlistOrder[]
 }
 
+export interface TravelOrderTicketSnapshot {
+  passengerName: string
+  trainCode: string
+  fromStation: string
+  toStation: string
+  departureTime: string
+  arrivalTime: string
+  seatTypeName: string
+  coachName: string
+  seatName: string
+  ticketTypeName: string
+  ticketStatusName: string
+}
+
+export interface TravelOrder {
+  id: string
+  orderNo: string
+  orderDate: string
+  departureDate: string
+  departureTime: string
+  arrivalDate: string | null
+  arrivalTime: string
+  fromStation: string
+  toStation: string
+  trainCode: string
+  trainNo: string | null
+  distance: number | null
+  passengerNames: string[]
+  seatTypeNames: string[]
+  coachNames: string[]
+  seatNames: string[]
+  ticketTypeNames: string[]
+  ticketStatusNames: string[]
+  ticketCount: number
+  totalPrice: number
+  ticketSnapshots: TravelOrderTicketSnapshot[]
+  cancelFlag: string | null
+  resignFlag: string | null
+  returnFlag: string | null
+  payFlag: string | null
+  confirmFlag: string | null
+  orderStatus: string | null
+  rawData: unknown
+  syncedAt: string
+  createdAt: string
+  displayDate: string
+}
+
 export const SEAT_TYPE_LABELS: Record<SeatType, string> = {
   SECOND_CLASS: '二等座',
   FIRST_CLASS: '一等座',

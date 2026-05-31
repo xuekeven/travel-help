@@ -3,7 +3,8 @@ import { addDays } from 'date-fns'
 import { prisma } from '@/lib/prisma'
 import { getTodayCN, formatDateForReminder, formatWeekdayForReminder } from '@/lib/date'
 import { sendWeComMessage } from '@/lib/notify'
-import type { TravelPlan, WaitlistOrder } from '@prisma/client'
+import { buildTravelOrderReminder, isActiveTravelOrder } from '@/lib/travel-order'
+import type { TravelPlan, WaitlistOrder, TravelOrder } from '@prisma/client'
 
 function buildPlanMessage(
   plan: TravelPlan,
@@ -35,8 +36,9 @@ async function runDailyReminder() {
     // 明天开售：出行日期 = 今天 + 15 天
     const tomorrowSaleTarget = addDays(new Date(today), 15)
     const waitlistTargets = [1, 2, 3] as const
+    const travelOrderTargets = [1, 2, 3] as const
 
-    const [todayPlans, tomorrowPlans, ...waitlistOrdersByDays] = await Promise.all([
+    const [todayPlans, tomorrowPlans, ...reminderResults] = await Promise.all([
       prisma.travelPlan.findMany({
         where: {
           departureDate: todaySaleTarget,
@@ -54,7 +56,16 @@ async function runDailyReminder() {
           },
         })
       ),
+      ...travelOrderTargets.map((days) =>
+        prisma.travelOrder.findMany({
+          where: {
+            departureDate: addDays(new Date(today), days),
+          },
+        })
+      ),
     ])
+    const waitlistOrdersByDays = reminderResults.slice(0, waitlistTargets.length) as WaitlistOrder[][]
+    const travelOrdersByDays = reminderResults.slice(waitlistTargets.length) as TravelOrder[][]
 
     for (const plan of todayPlans) {
       await sendWeComMessage(buildPlanMessage(plan, '今天'))
@@ -69,13 +80,24 @@ async function runDailyReminder() {
       }
     }
 
+    for (const [index, orders] of travelOrdersByDays.entries()) {
+      const days = travelOrderTargets[index]
+      for (const order of orders.filter(isActiveTravelOrder)) {
+        await sendWeComMessage(buildTravelOrderReminder(order, days))
+      }
+    }
+
     const pendingWaitlistCount = waitlistOrdersByDays.reduce(
       (sum, orders) => sum + orders.filter(isPendingWaitlistOrder).length,
       0
     )
+    const activeTravelOrderCount = travelOrdersByDays.reduce(
+      (sum, orders) => sum + orders.filter(isActiveTravelOrder).length,
+      0
+    )
 
     console.log(
-      `[Cron] 完成：今天开售 ${todayPlans.length} 条，明天开售 ${tomorrowPlans.length} 条，候补临近出行 ${pendingWaitlistCount} 条`
+      `[Cron] 完成：今天开售 ${todayPlans.length} 条，明天开售 ${tomorrowPlans.length} 条，候补临近出行 ${pendingWaitlistCount} 条，出行订单提醒 ${activeTravelOrderCount} 条`
     )
   } catch (err) {
     console.error('[Cron] 执行异常：', err)

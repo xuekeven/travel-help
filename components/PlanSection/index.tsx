@@ -58,7 +58,7 @@ export default function PlanSection() {
       sorter: (a, b) => a.departureDate.localeCompare(b.departureDate),
       sortDirections: ['ascend', 'descend', 'ascend'],
       defaultSortOrder: 'ascend',
-      render: (v: string) => formatDepartureDateWithWeekday(v),
+      render: (v: string) => <span className={styles.dateStrong}>{formatDepartureDateWithWeekday(v)}</span>,
     },
     {
       title: '节假日信息',

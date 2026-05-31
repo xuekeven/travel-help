@@ -60,3 +60,38 @@ model WaitlistOrder {
 
   @@map("waitlist_orders")
 }
+
+model TravelOrder {
+  id                String   @id @default(uuid())
+  orderNo           String   @unique
+  orderDate         DateTime
+  departureDate     DateTime @db.Date
+  departureTime     String
+  arrivalDate      DateTime? @db.Date
+  arrivalTime       String
+  fromStation       String
+  toStation         String
+  trainCode         String
+  trainNo           String?
+  distance          Int?
+  passengerNames    String[]
+  seatTypeNames     String[]
+  coachNames        String[]
+  seatNames         String[]
+  ticketTypeNames   String[]
+  ticketStatusNames String[]
+  ticketCount       Int
+  totalPrice        Decimal  @db.Decimal(10, 1)
+  ticketSnapshots   Json
+  cancelFlag        String?
+  resignFlag        String?
+  returnFlag        String?
+  payFlag           String?
+  confirmFlag       String?
+  orderStatus       String?
+  rawData           Json
+  syncedAt          DateTime @default(now()) @updatedAt
+  createdAt         DateTime @default(now())
+
+  @@map("travel_orders")
+}

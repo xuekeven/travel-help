@@ -81,7 +81,22 @@ window.addEventListener('message', async (event) => {
     return
   }
 
-  if (event.data?.type !== 'ORDERS_DATA') return
+  if (event.data?.type === 'TRAVEL_ORDERS_DATA') {
+    const travelOrders = extractTravelOrders(event.data.payload)
+    if (travelOrders.length === 0) {
+      addLog('info', '未出行订单列表为空', STATUS.EMPTY)
+      console.log('[12306助手] 未出行订单列表为空')
+      await syncTravelOrders([])
+      return
+    }
+
+    addLog('info', `检测到 ${travelOrders.length} 条出行订单，准备同步...`, STATUS.SYNCING)
+    console.log(`[12306助手] 检测到 ${travelOrders.length} 条出行订单，准备同步...`, travelOrders)
+    await syncTravelOrders(travelOrders)
+    return
+  }
+
+  if (event.data?.type !== 'WAITLIST_ORDERS_DATA' && event.data?.type !== 'ORDERS_DATA') return
 
   const rawOrders = extractOrders(event.data.payload)
   if (rawOrders.length === 0) {
@@ -439,6 +454,12 @@ function extractOrders(json) {
   return []
 }
 
+function extractTravelOrders(json) {
+  const list = json?.data?.OrderDTODataList ?? json?.data?.data?.OrderDTODataList
+  if (Array.isArray(list)) return list
+  return []
+}
+
 function parseOrder(raw) {
   const needs = raw.needs ?? []
   const firstNeed = needs[0] ?? {}
@@ -496,6 +517,53 @@ async function syncOrders(orders) {
     if (res?.ok && res.json != null) {
       addLog('info', `已同步 ${res.json.count} 条候补订单到 ${base}`, STATUS.SUCCESS)
       console.log(`[12306助手] ✅ 已同步 ${res.json.count} 条候补订单到 ${base}`)
+    } else if (res?.status === 401) {
+      addLog('error', 'Token 验证失败，请检查设置页的 Token', STATUS.ERROR)
+      console.error('[12306助手] ❌ Token 验证失败，请检查设置页的 Token')
+    } else {
+      addLog('error', `同步失败，服务器返回 ${res?.status ?? '?'}`, STATUS.ERROR)
+      console.error(`[12306助手] ❌ 同步失败，服务器返回 ${res?.status ?? '?'}`)
+    }
+  } catch (err) {
+    addLog('error', `请求异常（服务器是否在线？）：${err.message}`, STATUS.ERROR)
+    console.error('[12306助手] ❌ 请求异常（服务器是否在线？）：', err.message)
+  }
+}
+
+async function syncTravelOrders(orders) {
+  const { serverUrl, syncToken } = await chrome.storage.sync.get(['serverUrl', 'syncToken'])
+
+  if (!serverUrl) {
+    addLog('warn', '未配置服务器地址，请在插件设置页填写', STATUS.WARNING)
+    console.warn('[12306助手] 未配置服务器地址，请在插件设置页填写')
+    return
+  }
+
+  const base = serverUrl.replace(/\/$/, '')
+  setStatus(STATUS.SYNCING)
+  try {
+    const res = await chrome.runtime.sendMessage({
+      type: 'SYNC_TRAVEL_ORDERS',
+      serverUrl: base,
+      syncToken,
+      orders,
+    })
+
+    if (chrome.runtime.lastError) {
+      addLog('error', chrome.runtime.lastError.message, STATUS.ERROR)
+      console.error('[12306助手] ❌', chrome.runtime.lastError.message)
+      return
+    }
+
+    if (res?.error) {
+      addLog('error', `请求异常（服务器是否在线？）：${res.error}`, STATUS.ERROR)
+      console.error('[12306助手] ❌ 请求异常（服务器是否在线？）：', res.error)
+      return
+    }
+
+    if (res?.ok && res.json != null) {
+      addLog('info', `已同步 ${res.json.count} 条出行订单到 ${base}`, STATUS.SUCCESS)
+      console.log(`[12306助手] ✅ 已同步 ${res.json.count} 条出行订单到 ${base}`)
     } else if (res?.status === 401) {
       addLog('error', 'Token 验证失败，请检查设置页的 Token', STATUS.ERROR)
       console.error('[12306助手] ❌ Token 验证失败，请检查设置页的 Token')

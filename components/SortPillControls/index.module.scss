@@ -1,0 +1,55 @@
+.sortControls {
+  display: inline-flex;
+  gap: 8px;
+}
+
+.sortButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 16px;
+  border: 1px solid #bfdbfe;
+  border-radius: 999px;
+  background: #f8fbff;
+  color: #2563eb;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+
+  &:hover {
+    background: #eef4ff;
+  }
+}
+
+.active {
+  background: #eef4ff;
+  border-color: #93c5fd;
+}
+
+.sortIcon {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 8px;
+}
+
+.triangle {
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  opacity: 0.28;
+}
+
+.up {
+  border-bottom: 5px solid currentColor;
+}
+
+.down {
+  border-top: 5px solid currentColor;
+}
+
+.triangle.active {
+  opacity: 1;
+}

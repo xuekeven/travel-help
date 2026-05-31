@@ -1,9 +1,10 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
-import { Radio, Spin, Empty, Typography } from 'antd'
+import { Spin, Empty, Typography } from 'antd'
 import type { WaitlistGroup } from '@/types'
 import { withBasePath } from '@/lib/with-base-path'
 import { formatDateTimeShanghai } from '@/lib/date'
+import SortPillControls from '@/components/SortPillControls'
 import WaitlistGroupCard from './WaitlistGroup'
 import styles from './index.module.scss'
 
@@ -27,15 +28,6 @@ function getSortOption(field: SortField, current: SortOption): SortOption {
   const [currentField, currentDir] = current.split('_') as [SortField, 'asc' | 'desc']
   const nextDir = currentField === field && currentDir === 'asc' ? 'desc' : 'asc'
   return `${field}_${nextDir}`
-}
-
-function SortIcon({ active, direction }: { active: boolean; direction: 'asc' | 'desc' }) {
-  return (
-    <span className={styles.sortIcon} aria-hidden>
-      <span className={`${styles.triangle} ${styles.up} ${active && direction === 'asc' ? styles.active : ''}`} />
-      <span className={`${styles.triangle} ${styles.down} ${active && direction === 'desc' ? styles.active : ''}`} />
-    </span>
-  )
 }
 
 export default function WaitlistSection() {
@@ -87,22 +79,19 @@ export default function WaitlistSection() {
           )}
         </div>
         <div className={styles.filterRow}>
-          <div className={styles.sortControls} role="group" aria-label="候补订单排序">
-            {SORT_OPTIONS.map((opt) => {
+          <SortPillControls
+            ariaLabel="候补订单排序"
+            options={SORT_OPTIONS.map((opt) => {
               const active = activeField === opt.field
-              return (
-                <button
-                  key={opt.field}
-                  type="button"
-                  className={`${styles.sortButton} ${active ? styles.active : ''}`}
-                  onClick={() => setSortOption(getSortOption(opt.field, sortOption))}
-                >
-                  <span>{opt.label}</span>
-                  <SortIcon active={active} direction={activeDirection} />
-                </button>
-              )
+              return {
+                key: opt.field,
+                label: opt.label,
+                active,
+                direction: activeDirection,
+                onClick: () => setSortOption(getSortOption(opt.field, sortOption)),
+              }
             })}
-          </div>
+          />
         </div>
       </div>
 

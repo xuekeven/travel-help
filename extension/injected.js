@@ -6,7 +6,16 @@
  * 将数据通过 postMessage 传给 content.js（Isolated World）。
  */
 ;(function () {
-  const INTERCEPT_KEYWORDS = ['/otn/afterNateOrder/queryUnHonourHOrder']
+  const INTERCEPTORS = [
+    {
+      keyword: '/otn/afterNateOrder/queryUnHonourHOrder',
+      type: 'WAITLIST_ORDERS_DATA',
+    },
+    {
+      keyword: '/otn/queryOrder/queryMyOrder',
+      type: 'TRAVEL_ORDERS_DATA',
+    },
+  ]
 
   function notify(type, payload) {
     window.postMessage({ source: '12306_HELPER', type, payload }, '*')
@@ -21,12 +30,13 @@
   }
 
   XMLHttpRequest.prototype.send = function (...args) {
-    if (INTERCEPT_KEYWORDS.some((kw) => this._interceptUrl.includes(kw))) {
+    const interceptor = INTERCEPTORS.find((item) => this._interceptUrl.includes(item.keyword))
+    if (interceptor) {
       this.addEventListener('load', function () {
         try {
           const json = JSON.parse(this.responseText)
           window.postMessage(
-            { source: '12306_HELPER', type: 'ORDERS_DATA', payload: json },
+            { source: '12306_HELPER', type: interceptor.type, payload: json },
             '*'
           )
         } catch (e) {

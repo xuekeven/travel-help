@@ -1,0 +1,237 @@
+.section {
+  background: #fff;
+  border-radius: 8px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  margin-bottom: 16px;
+  gap: 12px;
+}
+
+.headerTop {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.headerTitle {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  min-width: 0;
+}
+
+.header h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a1a;
+  white-space: nowrap;
+}
+
+.rule {
+  color: #1a1a1a;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.lastSynced {
+  flex-shrink: 0;
+  color: #1a1a1a !important;
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.orderTable {
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.tableHead {
+  display: grid;
+  grid-template-columns: 1.45fr 0.95fr 0.95fr 0.5fr;
+  gap: 0;
+  border-bottom: 1px solid #f0f0f0;
+  background: #fafafa;
+  color: #666;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.tableHead > span {
+  padding: 13px 14px;
+  text-align: center;
+}
+
+.orderList {
+  display: flex;
+  flex-direction: column;
+}
+
+.orderCard {
+  border-bottom: 1px solid #f0f0f0;
+
+  &:last-child {
+    border-bottom: 0;
+  }
+}
+
+.orderMeta {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 10px 16px;
+  background: #f3f8ff;
+  border-bottom: 1px solid #dbeafe;
+  color: #4b5563;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.orderBody {
+  display: grid;
+  grid-template-columns: 1.45fr 0.95fr 0.95fr 0.5fr;
+  align-items: stretch;
+}
+
+.orderBody > div {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 92px;
+  padding: 14px;
+  border-right: 1px solid #f0f0f0;
+  text-align: center;
+  font-size: 14px;
+  color: #303030;
+
+  &:last-child {
+    border-right: 0;
+  }
+}
+
+.trainCell {
+  align-items: stretch;
+  text-align: left !important;
+}
+
+.journeyGrid {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  align-items: center;
+  column-gap: 12px;
+  row-gap: 6px;
+  width: 100%;
+}
+
+.trainCode {
+  grid-row: 1 / span 2;
+  align-self: center;
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 62px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: #e8f2ff;
+  color: #2f6feb;
+  font-size: 14px;
+  font-weight: 600;
+  margin-right: 6px;
+}
+
+.stationBlock {
+  min-width: 0;
+  justify-self: center;
+}
+
+.stationBlock:first-of-type {
+  grid-column: 2;
+}
+
+.stationBlock:last-of-type {
+  grid-column: 4;
+}
+
+.stationName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #222;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.routeArrow {
+  align-self: end;
+  justify-self: center;
+  color: #9ca3af;
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.timeLine {
+  justify-self: center;
+  color: #6b7280;
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.timeLine:first-of-type {
+  grid-column: 2;
+}
+
+.timeLine:last-of-type {
+  grid-column: 4;
+}
+
+.passengerCell,
+.seatCell,
+.priceCell {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.passengerCell {
+  align-items: center;
+}
+
+.seatCell {
+  align-items: center;
+}
+
+.priceCell {
+  align-items: center;
+}
+
+.priceCell strong {
+  display: block;
+  margin-top: 4px;
+  color: #ff7a00;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.sortRow {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+@media (max-width: 1100px) {
+  .tableHead,
+  .orderBody {
+    grid-template-columns: 1.4fr 1fr 1fr 0.65fr;
+  }
+}

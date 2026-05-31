@@ -17,6 +17,7 @@
     {
       "matches": [
         "https://kyfw.12306.cn/otn/view/lineUp_order.html",
+        "https://kyfw.12306.cn/otn/queryOrder/*",
         "https://kyfw.12306.cn/otn/afterNate*",
         "https://kyfw.12306.cn/otn/afterNateOrder*"
       ],
@@ -27,6 +28,7 @@
     {
       "matches": [
         "https://kyfw.12306.cn/otn/view/lineUp_order.html",
+        "https://kyfw.12306.cn/otn/queryOrder/*",
         "https://kyfw.12306.cn/otn/afterNate*",
         "https://kyfw.12306.cn/otn/afterNateOrder*"
       ],
