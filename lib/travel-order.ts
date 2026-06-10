@@ -233,7 +233,7 @@ export function isActiveTravelOrder(order: {
 }): boolean {
   if (order.cancelFlag === 'Y') return false
   const text = [order.orderStatus, ...order.ticketStatusNames].filter(Boolean).join('|')
-  return !/(已取消|取消|已退票|退票|已改签失败|改签失败|已关闭|关闭|退单)/.test(text)
+  return !/(已取消|取消|已退票|退票|已改签|改签成功|已改签失败|改签失败|已出站|出站|已关闭|关闭|退单)/.test(text)
 }
 
 function deriveOrderStatus(order: RawOrder, ticketStatusNames: string[]): string | null {

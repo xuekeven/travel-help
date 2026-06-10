@@ -90,9 +90,11 @@ window.addEventListener('message', async (event) => {
       return
     }
 
-    addLog('info', `检测到 ${travelOrders.length} 条出行订单，准备同步...`, STATUS.SYNCING)
-    console.log(`[12306助手] 检测到 ${travelOrders.length} 条出行订单，准备同步...`, travelOrders)
-    await syncTravelOrders(travelOrders)
+    const filtered = filterEffectiveTravelOrders(travelOrders)
+    const summary = formatTravelOrderFilterSummary(filtered)
+    addLog('info', `${summary}，准备同步...`, STATUS.SYNCING)
+    console.log(`[12306助手] ${summary}，准备同步...`, filtered.effectiveOrders)
+    await syncTravelOrders(filtered.effectiveOrders)
     return
   }
 
@@ -458,6 +460,78 @@ function extractTravelOrders(json) {
   const list = json?.data?.OrderDTODataList ?? json?.data?.data?.OrderDTODataList
   if (Array.isArray(list)) return list
   return []
+}
+
+function filterEffectiveTravelOrders(orders) {
+  const stats = {
+    total: orders.length,
+    refunded: 0,
+    changed: 0,
+    exited: 0,
+    effectiveOrders: [],
+  }
+
+  for (const order of orders) {
+    const invalidReason = classifyInvalidTravelOrder(order)
+    if (invalidReason === 'refunded') {
+      stats.refunded += 1
+      continue
+    }
+    if (invalidReason === 'changed') {
+      stats.changed += 1
+      continue
+    }
+    if (invalidReason === 'exited') {
+      stats.exited += 1
+      continue
+    }
+
+    stats.effectiveOrders.push(order)
+  }
+
+  return stats
+}
+
+function classifyInvalidTravelOrder(order) {
+  const text = collectTravelOrderStatusText(order)
+  if (/(已退票|退票成功|退票)/.test(text)) return 'refunded'
+  if (/(已改签|改签成功)/.test(text)) return 'changed'
+  if (/(已出站|出站)/.test(text)) return 'exited'
+  return null
+}
+
+function collectTravelOrderStatusText(order) {
+  const tickets = Array.isArray(order?.tickets) ? order.tickets : []
+  const values = [
+    order?.ticket_status_name_page,
+    order?.status_name,
+    order?.order_status_name,
+    order?.order_status,
+    order?.ticket_status_name,
+    order?.cancel_flag === 'Y' ? '已退票' : '',
+    ...tickets.flatMap((ticket) => [
+      ticket?.ticket_status_name,
+      ticket?.ticket_status_name_page,
+      ticket?.status_name,
+      ticket?.order_status_name,
+      ticket?.ticket_status,
+    ]),
+  ]
+
+  return values
+    .filter((value) => value != null)
+    .map((value) => String(value).trim())
+    .filter(Boolean)
+    .join('|')
+}
+
+function formatTravelOrderFilterSummary(stats) {
+  const parts = [`检测到 ${stats.total} 条出行订单`]
+  if (stats.refunded > 0) parts.push(`其中 ${stats.refunded} 条已退票订单`)
+  if (stats.changed > 0) parts.push(`${stats.changed} 条已改签订单`)
+  if (stats.exited > 0) parts.push(`${stats.exited} 条已出站订单`)
+  parts.push(`${stats.effectiveOrders.length} 条有效订单`)
+  return parts.join('，')
 }
 
 function parseOrder(raw) {
