@@ -1,4 +1,5 @@
 import { Prisma } from '@prisma/client'
+import { fromZonedTime } from 'date-fns-tz'
 import { formatDepartureDateWithWeekday, formatWeekdayForReminder } from '@/lib/date'
 
 type RawOrder = Record<string, any>
@@ -269,6 +270,14 @@ function parseDateTime(value: unknown): Date | null {
   if (!value) return null
   const text = String(value).trim()
   if (!text) return null
+  const localMatch = text.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?/)
+  if (localMatch) {
+    const [, year, month, day, hour, minute, second = '0'] = localMatch
+    return fromZonedTime(
+      new Date(Number(year), Number(month) - 1, Number(day), Number(hour), Number(minute), Number(second)),
+      'Asia/Shanghai'
+    )
+  }
   const normalized = text.includes('T') ? text : text.replace(' ', 'T')
   const date = new Date(normalized)
   return Number.isNaN(date.getTime()) ? null : date

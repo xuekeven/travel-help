@@ -53,6 +53,8 @@ const STATUS = {
 }
 
 const state = {
+  enabled: false,
+  started: false,
   logs: [],
   status: STATUS.INIT,
   panelOpen: false,
@@ -67,11 +69,48 @@ const state = {
   },
 }
 
-mountWhenReady()
-setStatus(STATUS.INIT)
-addLog('info', 'Content script 已就绪，等待订单数据...', STATUS.READY)
+chrome.storage.sync.get(['enabled'], (result) => {
+  if (result.enabled === true) {
+    startHelper()
+  } else {
+    console.log('[12306助手] 插件未启用，跳过页面功能')
+  }
+})
 
-window.addEventListener('message', async (event) => {
+chrome.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName !== 'sync' || !changes.enabled) return
+  if (changes.enabled.newValue === true) {
+    startHelper()
+  } else {
+    stopHelper()
+  }
+})
+
+function startHelper() {
+  if (state.started) return
+  state.enabled = true
+  state.started = true
+  window.addEventListener('message', handleHelperMessage)
+  mountWhenReady()
+  setStatus(STATUS.INIT)
+  addLog('info', 'Content script 已就绪，等待订单数据...', STATUS.READY)
+  enablePageInterceptors()
+}
+
+function stopHelper() {
+  state.enabled = false
+  state.started = false
+  window.removeEventListener('message', handleHelperMessage)
+  unmountUi()
+  console.log('[12306助手] 插件已停用，停止处理页面数据')
+}
+
+function enablePageInterceptors() {
+  window.postMessage({ source: '12306_HELPER_CONTROL', type: 'ENABLE_INTERCEPTORS' }, '*')
+}
+
+async function handleHelperMessage(event) {
+  if (!state.enabled) return
   if (event.source !== window) return
   if (event.data?.source !== '12306_HELPER') return
 
@@ -112,7 +151,7 @@ window.addEventListener('message', async (event) => {
   addLog('info', `检测到 ${orders.length} 条候补订单，准备同步...`, STATUS.SYNCING)
   console.log(`[12306助手] 检测到 ${orders.length} 条候补订单，准备同步...`, orders)
   await syncOrders(orders)
-})
+}
 
 function statusFromKey(key) {
   if (!key) return null
@@ -301,6 +340,14 @@ function mountUi() {
   bindDragAndClick()
 
   renderUi()
+}
+
+function unmountUi() {
+  if (!state.ui) return
+  state.ui.host.remove()
+  state.ui = null
+  state.panelOpen = false
+  state.dragging = false
 }
 
 function bindDragAndClick() {

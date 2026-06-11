@@ -27,6 +27,14 @@ function parseDepartureDateTime(order: TravelOrder) {
   return createDateTimeShanghai(order.departureDate, order.departureTime)
 }
 
+function formatOrderDate(iso: string) {
+  const zoned = toZonedTime(new Date(iso), TIMEZONE)
+  const year = zoned.getFullYear()
+  const month = String(zoned.getMonth() + 1).padStart(2, '0')
+  const day = String(zoned.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 function formatRefundDeadline(date: Date) {
   const zoned = toZonedTime(date, TIMEZONE)
   return `${zoned.getMonth() + 1}月${zoned.getDate()}号${zoned.getHours()}点${String(zoned.getMinutes()).padStart(2, '0')}分`
@@ -36,14 +44,23 @@ function addHours(date: Date, hours: number) {
   return new Date(date.getTime() + hours * 60 * 60 * 1000)
 }
 
+function addDaysToDateText(dateText: string, days: number) {
+  const [year, month, day] = dateText.slice(0, 10).split('-').map(Number)
+  const date = new Date(year, month - 1, day)
+  date.setDate(date.getDate() + days)
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+}
+
 function getRefundFeeRows(order: TravelOrder) {
   const departureAt = parseDepartureDateTime(order)
   if (!departureAt) return []
   const now = Date.now()
+  const freeUntil = createDateTimeShanghai(addDaysToDateText(order.departureDate, -7), '00:00')
 
   return [
     {
-      deadline: addHours(departureAt, -8 * 24),
+      // 12306 的“开车前 8 天以上”按自然日判断：6月19日车票在6月11日当天仍免费。
+      deadline: freeUntil,
       fee: formatRefundFee(order.totalPrice, 0),
     },
     {
@@ -58,7 +75,10 @@ function getRefundFeeRows(order: TravelOrder) {
       deadline: departureAt,
       fee: formatRefundFee(order.totalPrice, 0.2),
     },
-  ].filter((row) => row.deadline.getTime() > now)
+  ].filter((row): row is { deadline: Date; fee: string } => {
+    if (!row.deadline) return false
+    return row.deadline.getTime() > now
+  })
 }
 
 function getSeatTypeLabel(order: TravelOrder) {
@@ -93,7 +113,7 @@ function OrderCard({ order }: { order: TravelOrder }) {
     <article className={styles.orderCard}>
       <div className={styles.orderMeta}>
         <span>出行日期：{order.displayDate}</span>
-        <span>订票日期：{order.orderDate.slice(0, 10)}</span>
+        <span>订票日期：{formatOrderDate(order.orderDate)}</span>
         <span>订单号：{order.orderNo}</span>
       </div>
       <div className={styles.orderBody}>
