@@ -1,8 +1,7 @@
 import type { NextConfig } from 'next'
-import { BASE_PATH } from './lib/base-path'
 
 const nextConfig: NextConfig = {
-  basePath: BASE_PATH,
+  assetPrefix: process.env.NODE_ENV === 'production' ? '/12306' : undefined,
   serverExternalPackages: ['node-cron'],
 }
 

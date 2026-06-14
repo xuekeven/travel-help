@@ -10,6 +10,9 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="zh-CN">
+      <head>
+        <link rel="icon" href="favicon.ico" />
+      </head>
       <body>
         <AntdRegistry>{children}</AntdRegistry>
       </body>

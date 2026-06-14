@@ -11,9 +11,9 @@
 ## 首次配置
 
 1. 点击工具栏图标，直接在弹出的面板中填写配置；也可以右键图标 → 「选项」
-2. 填写 **服务器地址**（**HTTPS**，与 Mixed Content 策略兼容；路径需包含助手前缀）：
+2. 填写 **服务器地址**（**HTTPS**，与 Mixed Content 策略兼容；如果经过 nginx 挂载到 `/12306/`，地址需包含该前缀）：
    - 示例：`https://homeserver.tailed5977.ts.net/12306`（**无**末尾 `/`）
-   - 若仅内网 HTTP + 反代映射到本机，且扩展仍走 background `fetch`，也可用 `http://<Tailscale IP>:3005/12306`（与 `next.config` 的 `basePath` 一致）
+   - 若直连 Next 服务，也可用 `http://<Tailscale IP>:3005`；插件会自动拼接 `/api/...`
 3. 打开 **「启用」** 开关；未启用时，进入 12306 相关页面不会渲染状态条，也不会拦截接口或同步数据
 4. 填写 **同步 Token**：与服务器 `.env` 中 `EXTENSION_SYNC_TOKEN` 一致
 5. 点击 **「保存设置」**

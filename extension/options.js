@@ -1,5 +1,5 @@
 /**
- * 仅填写站点根（含 basePath），不要带 /api；请求时会自动拼 /api/...
+ * 仅填写站点根或 nginx 反代入口（如 /12306），不要带 /api；请求时会自动拼 /api/...
  */
 function normalizeServerBase(input) {
   let s = input.trim().replace(/\/+$/, '')
