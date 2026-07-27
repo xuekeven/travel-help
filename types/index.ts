@@ -24,6 +24,7 @@ export interface TravelPlan {
   createdAt: string
   updatedAt: string
   saleDate: string
+  additionalSaleDates: string[]
   daysUntilSale: number
 }
 

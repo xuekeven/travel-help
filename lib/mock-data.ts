@@ -1,5 +1,10 @@
 import { addDays } from 'date-fns'
-import { getAutoPlanStatus, getTodayCN } from '@/lib/date'
+import {
+  getAutoPlanStatusForSaleDate,
+  getDefaultSaleTime,
+  getSaleDate,
+  getTodayCN,
+} from '@/lib/date'
 import { normalizeTravelOrder } from '@/lib/travel-order'
 import type { Prisma } from '@prisma/client'
 
@@ -17,6 +22,8 @@ type PlanStatus = 'PENDING_SALE' | 'ON_SALE'
 export type MockTravelPlan = {
   id: string
   departureDate: Date
+  saleDate: Date
+  additionalSaleDates: Date[]
   holidayName: string | null
   fromStation: string
   toStation: string
@@ -74,6 +81,8 @@ export function getMockStore(): MockStore {
 
 export function createMockPlan(input: {
   departureDate: string
+  saleDate?: string
+  additionalSaleDates?: string[]
   holidayName?: string | null
   fromStation: string
   toStation: string
@@ -84,15 +93,18 @@ export function createMockPlan(input: {
   const store = getMockStore()
   const now = new Date()
   const departureDate = new Date(input.departureDate)
+  const saleDate = input.saleDate ? new Date(input.saleDate) : getDefaultSaleTime(departureDate)
   const plan: MockTravelPlan = {
     id: `mock-plan-${store.planSeq++}`,
     departureDate,
+    saleDate,
+    additionalSaleDates: (input.additionalSaleDates ?? []).map((value) => new Date(value)),
     holidayName: input.holidayName || null,
     fromStation: input.fromStation,
     toStation: input.toStation,
     seatType: input.seatType,
     ticketCount: input.ticketCount ?? 1,
-    status: getAutoPlanStatus(departureDate),
+    status: getAutoPlanStatusForSaleDate(saleDate),
     remark: input.remark || null,
     createdAt: now,
     updatedAt: now,
@@ -105,6 +117,8 @@ export function updateMockPlan(
   id: string,
   input: Partial<{
     departureDate: string
+    saleDate: string
+    additionalSaleDates: string[]
     holidayName: string | null
     fromStation: string
     toStation: string
@@ -118,6 +132,10 @@ export function updateMockPlan(
   if (!plan) return null
 
   if (input.departureDate) plan.departureDate = new Date(input.departureDate)
+  if (input.saleDate) plan.saleDate = new Date(input.saleDate)
+  if (input.additionalSaleDates) {
+    plan.additionalSaleDates = input.additionalSaleDates.map((value) => new Date(value))
+  }
   if (input.holidayName !== undefined) plan.holidayName = input.holidayName || null
   if (input.fromStation) plan.fromStation = input.fromStation
   if (input.toStation) plan.toStation = input.toStation
@@ -125,7 +143,7 @@ export function updateMockPlan(
   if (input.ticketCount !== undefined) plan.ticketCount = input.ticketCount
   if (input.remark !== undefined) plan.remark = input.remark || null
 
-  plan.status = getAutoPlanStatus(plan.departureDate)
+  plan.status = getAutoPlanStatusForSaleDate(plan.saleDate)
   plan.updatedAt = new Date()
   return plan
 }
@@ -154,7 +172,17 @@ function createInitialStore(): MockStore {
   const today = new Date(getTodayCN())
   const plans: MockTravelPlan[] = [
     mockPlan(1, addDays(today, 3), '端午测试', '北京西', '邯郸东', 'SECOND_CLASS', 1, '临近出行'),
-    mockPlan(2, addDays(today, 20), '暑期', '北京南', '上海虹桥', 'FIRST_CLASS', 2, '用于查看待开售状态'),
+    mockPlan(
+      2,
+      addDays(today, 20),
+      '暑期',
+      '北京南',
+      '上海虹桥',
+      'FIRST_CLASS',
+      2,
+      '用于查看待开售状态',
+      [new Date(`${getSaleDate(addDays(today, 20))}T08:30:00+08:00`)]
+    ),
     mockPlan(3, addDays(today, 32), null, '广州南', '长沙南', 'SECOND_CLASS', 1, null),
   ]
 
@@ -335,18 +363,22 @@ function mockPlan(
   toStation: string,
   seatType: SeatType,
   ticketCount: number,
-  remark: string | null
+  remark: string | null,
+  additionalSaleDates: Date[] = []
 ): MockTravelPlan {
   const now = new Date()
+  const saleDate = getDefaultSaleTime(departureDate)
   return {
     id: `mock-plan-${index}`,
     departureDate,
+    saleDate,
+    additionalSaleDates,
     holidayName,
     fromStation,
     toStation,
     seatType,
     ticketCount,
-    status: getAutoPlanStatus(departureDate),
+    status: getAutoPlanStatusForSaleDate(saleDate),
     remark,
     createdAt: now,
     updatedAt: now,

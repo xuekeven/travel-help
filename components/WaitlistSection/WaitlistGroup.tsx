@@ -35,6 +35,12 @@ function NeedSegmentRows({ segments }: { segments: WaitlistNeedSegment[] }) {
 export default function WaitlistGroupCard({ group }: { group: WaitlistGroup }) {
   const columns: ColumnsType<WaitlistOrder> = [
     {
+      title: '订单号',
+      dataIndex: 'orderNo',
+      width: 170,
+      className: styles.orderNoCell,
+    },
+    {
       title: '候补车次',
       key: 'needSegments',
       width: 400,
@@ -70,6 +76,7 @@ export default function WaitlistGroupCard({ group }: { group: WaitlistGroup }) {
         dataSource={group.orders}
         pagination={false}
         size="small"
+        scroll={{ x: 760 }}
       />
     </div>
   )

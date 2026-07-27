@@ -1,0 +1,3 @@
+ALTER TABLE "travel_plans"
+ALTER COLUMN "saleDate" TYPE TIMESTAMP(3)
+USING "saleDate"::TIMESTAMP(3);

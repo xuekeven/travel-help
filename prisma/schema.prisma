@@ -26,17 +26,19 @@ enum PlanStatus {
 }
 
 model TravelPlan {
-  id            String     @id @default(uuid())
-  departureDate DateTime   @db.Date
-  holidayName   String?
-  fromStation   String
-  toStation     String
-  seatType      SeatType
-  ticketCount   Int        @default(1)
-  status        PlanStatus @default(PENDING_SALE)
-  remark        String?
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
+  id                  String     @id @default(uuid())
+  departureDate       DateTime   @db.Date
+  saleDate            DateTime
+  additionalSaleDates DateTime[] @default([])
+  holidayName         String?
+  fromStation         String
+  toStation           String
+  seatType            SeatType
+  ticketCount         Int        @default(1)
+  status              PlanStatus @default(PENDING_SALE)
+  remark              String?
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
 
   @@map("travel_plans")
 }

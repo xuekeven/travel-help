@@ -6,6 +6,7 @@ import { withBasePath } from '@/lib/with-base-path'
 import { toZonedTime } from 'date-fns-tz'
 import { createDateTimeShanghai, formatDateTimeShanghai, TIMEZONE } from '@/lib/date'
 import SortPillControls from '@/components/SortPillControls'
+import SectionTitle from '@/components/SectionTitle'
 import styles from './index.module.scss'
 
 function joinUnique(values: string[]) {
@@ -182,12 +183,14 @@ export default function TravelOrderSection() {
     <section className={styles.section}>
       <div className={styles.header}>
         <div className={styles.headerTop}>
-          <div className={styles.headerTitle}>
-            <h2>出行订单</h2>
-            <span className={styles.rule}>
-              安装 Chrome 插件后，打开 12306 未出行订单页面即可自动同步；系统会在出行前 2 天、1 天和当天的 00:00 发送出行提醒。
-            </span>
-          </div>
+          <SectionTitle
+            title="出行订单"
+            titleHref="https://kyfw.12306.cn/otn/view/train_order.html"
+            tips={[
+              '安装 Chrome 插件后，打开 12306 未出行订单页面，即可自动同步订单',
+              '所有未出行订单都会在出行日期前 2 天的 00:00、前 1 天的 00:00 和出行当天的 00:00 发送提醒',
+            ]}
+          />
         </div>
         <div className={styles.sortRow}>
           <SortPillControls
@@ -216,10 +219,6 @@ export default function TravelOrderSection() {
             description={
               <span>
                 暂无出行订单数据
-                <br />
-                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                  请在 Chrome 中安装插件，打开 12306 未出行订单页面即可自动同步，系统会在出行前 2 天、1 天和当天 00:00 发送提醒
-                </Typography.Text>
               </span>
             }
           />

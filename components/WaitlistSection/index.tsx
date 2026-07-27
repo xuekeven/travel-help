@@ -5,6 +5,7 @@ import type { WaitlistGroup } from '@/types'
 import { withBasePath } from '@/lib/with-base-path'
 import { formatDateTimeShanghai } from '@/lib/date'
 import SortPillControls from '@/components/SortPillControls'
+import SectionTitle from '@/components/SectionTitle'
 import WaitlistGroupCard from './WaitlistGroup'
 import styles from './index.module.scss'
 
@@ -62,12 +63,20 @@ export default function WaitlistSection() {
     <section className={styles.section}>
       <div className={styles.header}>
         <div className={styles.headerTop}>
-          <div className={styles.headerTitle}>
-            <h2>候补订单</h2>
-            <span className={styles.rule}>
-              安装 Chrome 插件后，打开 12306 候补订单页面即可自动同步；未候补成功的订单系统会在出行前 2 天、1 天和当天的 00:00 提醒。
-            </span>
-          </div>
+          <SectionTitle
+            title="候补订单"
+            titleHref="https://kyfw.12306.cn/otn/view/lineUp_order.html"
+            tips={[
+              '安装 Chrome 插件后，打开 12306 候补订单页面，即可自动同步订单',
+              '所有未候补成功的订单都会在出行日期前 2 天的 00:00、前 1 天的 00:00 和出行当天的 00:00 发送提醒',
+            ]}
+          />
+          {lastSynced && (
+            <Typography.Text type="secondary" className={styles.lastSynced}>
+              最近同步：
+              {formatDateTimeShanghai(lastSynced)}
+            </Typography.Text>
+          )}
         </div>
         <div className={styles.filterRow}>
           <SortPillControls
@@ -83,15 +92,6 @@ export default function WaitlistSection() {
               }
             })}
           />
-          {lastSynced && (
-            <Typography.Text
-              type="secondary"
-              className={styles.lastSynced}
-            >
-              最近同步：
-              {formatDateTimeShanghai(lastSynced)}
-            </Typography.Text>
-          )}
         </div>
       </div>
 
@@ -101,10 +101,6 @@ export default function WaitlistSection() {
             description={
               <span>
                 暂无候补订单数据
-                <br />
-                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                  请在 Chrome 中安装插件，打开 12306 候补订单页面即可自动同步，系统会在出行前 2 天、1 天和当天 00:00 提醒
-                </Typography.Text>
               </span>
             }
           />

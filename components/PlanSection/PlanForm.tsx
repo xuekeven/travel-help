@@ -1,14 +1,17 @@
 'use client'
 import { type PointerEvent as ReactPointerEvent, useEffect, useRef, useState } from 'react'
 import {
-  Modal, Form, Input, Select, DatePicker,
+  Modal, Form, Input, Select, DatePicker, Button,
   InputNumber, Row, Col, message,
 } from 'antd'
+import { DeleteOutlined, PlusOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
+import 'dayjs/locale/zh-cn'
 import type { TravelPlan } from '@/types'
 import { SEAT_TYPE_LABELS } from '@/types'
 import { withBasePath } from '@/lib/with-base-path'
-import PlanStatusTag, { getPlanStatusForDepartureDate } from './PlanStatusTag'
+import PlanStatusTag, { getPlanStatusForSaleDate } from './PlanStatusTag'
+import styles from './index.module.scss'
 
 interface Props {
   open: boolean
@@ -18,6 +21,30 @@ interface Props {
 }
 
 const SEAT_OPTIONS = Object.entries(SEAT_TYPE_LABELS).map(([value, label]) => ({ value, label }))
+
+dayjs.locale('zh-cn')
+
+function StatusDisplay({ saleDate }: { saleDate?: dayjs.Dayjs }) {
+  const status = saleDate ? getPlanStatusForSaleDate(saleDate) : null
+
+  return (
+    <div className={styles.statusDisplay}>
+      {status ? <PlanStatusTag status={status} /> : (
+        <span className={styles.statusPlaceholder}>选择开售时间后自动计算</span>
+      )}
+    </div>
+  )
+}
+
+function SaleTimeStatus({ fieldName }: { fieldName: number }) {
+  const saleDate = Form.useWatch(['saleTimes', fieldName]) as dayjs.Dayjs | undefined
+
+  return (
+    <Form.Item label="状态" className={styles.saleTimeStatus}>
+      <StatusDisplay saleDate={saleDate} />
+    </Form.Item>
+  )
+}
 
 export default function PlanForm({ open, editingPlan, onSuccess, onCancel }: Props) {
   const [form] = Form.useForm()
@@ -30,25 +57,26 @@ export default function PlanForm({ open, editingPlan, onSuccess, onCancel }: Pro
     originY: 0,
   })
 
-  // 监听出行日期，实时计算开售日期
-  const departureDate = Form.useWatch('departureDate', form)
-  const saleDateDisplay = departureDate
-    ? dayjs(departureDate).subtract(14, 'day').format('YYYY-MM-DD')
-    : ''
-  const status = departureDate ? getPlanStatusForDepartureDate(departureDate) : null
-
   useEffect(() => {
     if (!open) return
     setModalOffset({ x: 0, y: 0 })
     if (editingPlan) {
-      const { status: _status, ...planFields } = editingPlan
       form.setFieldsValue({
-        ...planFields,
         departureDate: dayjs(editingPlan.departureDate),
+        saleTimes: [
+          dayjs(editingPlan.saleDate),
+          ...(editingPlan.additionalSaleDates ?? []).map((value) => dayjs(value)),
+        ],
+        holidayName: editingPlan.holidayName,
+        fromStation: editingPlan.fromStation,
+        toStation: editingPlan.toStation,
+        seatType: editingPlan.seatType,
+        ticketCount: editingPlan.ticketCount,
+        remark: editingPlan.remark,
       })
     } else {
       form.resetFields()
-      form.setFieldsValue({ ticketCount: 1 })
+      form.setFieldsValue({ ticketCount: 1, saleTimes: [undefined] })
     }
   }, [open, editingPlan, form])
 
@@ -83,9 +111,15 @@ export default function PlanForm({ open, editingPlan, onSuccess, onCancel }: Pro
 
   const handleOk = async () => {
     const values = await form.validateFields()
+    const { saleTimes, ...restValues } = values
+    const normalizedSaleTimes = saleTimes as dayjs.Dayjs[]
     const body = {
-      ...values,
+      ...restValues,
       departureDate: (values.departureDate as dayjs.Dayjs).format('YYYY-MM-DD'),
+      saleDate: normalizedSaleTimes[0].second(0).millisecond(0).toISOString(),
+      additionalSaleDates: normalizedSaleTimes.slice(1).map(
+        (value) => value.second(0).millisecond(0).toISOString()
+      ),
     }
     const path = isEdit ? `/api/plans/${editingPlan!.id}` : '/api/plans'
     const res = await fetch(withBasePath(path), {
@@ -143,44 +177,21 @@ export default function PlanForm({ open, editingPlan, onSuccess, onCancel }: Pro
               label="出行日期"
               rules={[{ required: true, message: '请选择出行日期' }]}
             >
-              <DatePicker style={{ width: '100%' }} placeholder="选择乘车日期" />
+              <DatePicker
+                style={{ width: '100%' }}
+                placeholder="选择乘车日期"
+                onChange={(value) => {
+                  form.setFieldValue(
+                    ['saleTimes', 0],
+                    value ? value.subtract(14, 'day').hour(8).minute(0).second(0).millisecond(0) : null
+                  )
+                }}
+              />
             </Form.Item>
           </Col>
           <Col span={12}>
             <Form.Item name="holidayName" label="节假日信息">
               <Input placeholder="如：劳动节、国庆节" />
-            </Form.Item>
-          </Col>
-        </Row>
-
-        {/* 第二行：开售日期 + 状态 */}
-        <Row gutter={16}>
-          <Col span={12}>
-            <Form.Item label="开售日期">
-              <Input
-                value={saleDateDisplay || '选择出行日期后自动计算'}
-                disabled
-                style={{ color: saleDateDisplay ? '#1677ff' : undefined }}
-              />
-            </Form.Item>
-          </Col>
-          <Col span={12}>
-            <Form.Item label="状态">
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  height: 32,
-                  padding: '0 11px',
-                  border: '1px solid #d9d9d9',
-                  borderRadius: 6,
-                  background: '#f5f5f5',
-                }}
-              >
-                {status ? <PlanStatusTag status={status} /> : (
-                  <span style={{ color: '#bfbfbf' }}>选择出行日期后自动计算</span>
-                )}
-              </div>
             </Form.Item>
           </Col>
         </Row>
@@ -229,6 +240,55 @@ export default function PlanForm({ open, editingPlan, onSuccess, onCancel }: Pro
         <Form.Item name="remark" label="备注">
           <Input.TextArea rows={2} placeholder="可填写备注信息" />
         </Form.Item>
+
+        <div className={styles.saleDateFields}>
+          <Form.List name="saleTimes">
+            {(fields, { add, remove }) => (
+              <>
+                {fields.map(({ key, ...field }, index) => (
+                  <div
+                    className={`${styles.saleTimeRow} ${fields.length > 1 ? styles.saleTimeRowWithDelete : ''}`}
+                    key={key}
+                  >
+                    <Form.Item
+                      {...field}
+                      className={styles.saleTimeItem}
+                      label={index === 0 ? '开售时间' : `开售时间${index + 1}`}
+                      rules={[{
+                        required: true,
+                        message: `请选择${index === 0 ? '开售时间' : `开售时间${index + 1}`}`,
+                      }]}
+                    >
+                      <DatePicker
+                        showTime={{
+                          format: 'HH:mm',
+                          defaultOpenValue: dayjs().hour(8).minute(0).second(0).millisecond(0),
+                        }}
+                        format="YYYY-MM-DD HH:mm"
+                        style={{ width: '100%' }}
+                        placeholder={index === 0 ? '默认提前 14 天，08:00' : '选择开售时间'}
+                      />
+                    </Form.Item>
+                    <SaleTimeStatus fieldName={field.name} />
+                    {fields.length > 1 && (
+                      <Button
+                        type="text"
+                        danger
+                        icon={<DeleteOutlined />}
+                        className={styles.removeSaleDateButton}
+                        aria-label={`删除${index === 0 ? '开售时间' : `开售时间${index + 1}`}`}
+                        onClick={() => remove(field.name)}
+                      />
+                    )}
+                  </div>
+                ))}
+                <Button type="dashed" block icon={<PlusOutlined />} onClick={() => add()}>
+                  增加开售时间
+                </Button>
+              </>
+            )}
+          </Form.List>
+        </div>
       </Form>
     </Modal>
   )

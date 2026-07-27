@@ -6,10 +6,22 @@ import type { ColumnsType } from 'antd/es/table/interface'
 import type { TravelPlan } from '@/types'
 import { withBasePath } from '@/lib/with-base-path'
 import { SEAT_TYPE_LABELS } from '@/types'
-import { formatDepartureDateWithWeekday } from '@/lib/date'
+import { formatDepartureDateWithWeekday, formatSaleDateTimeShanghai } from '@/lib/date'
 import PlanForm from './PlanForm'
-import PlanStatusTag, { getPlanStatusForDepartureDate } from './PlanStatusTag'
+import PlanStatusTag, { getPlanStatusForSaleDate } from './PlanStatusTag'
+import SectionTitle from '@/components/SectionTitle'
 import styles from './index.module.scss'
+
+function SaleTimeCell({ value }: { value?: string }) {
+  if (!value) return <span style={{ color: '#bbb' }}>-</span>
+
+  return (
+    <div className={styles.saleTimeCell}>
+      <span className={styles.saleTimeValue}>{formatSaleDateTimeShanghai(value)}</span>
+      <PlanStatusTag status={getPlanStatusForSaleDate(value)} />
+    </div>
+  )
+}
 
 export default function PlanSection() {
   const [plans, setPlans] = useState<TravelPlan[]>([])
@@ -50,6 +62,11 @@ export default function PlanSection() {
     setModalOpen(true)
   }
 
+  const maxAdditionalSaleDateCount = plans.reduce(
+    (max, plan) => Math.max(max, plan.additionalSaleDates?.length ?? 0),
+    0
+  )
+
   const columns: ColumnsType<TravelPlan> = [
     {
       title: '出行日期',
@@ -68,19 +85,20 @@ export default function PlanSection() {
         v ? <Tag color="gold">{v}</Tag> : <span style={{ color: '#bbb' }}>-</span>,
     },
     {
-      title: '开售日期',
+      title: '开售时间',
       key: 'saleInfo',
-      width: 150,
-      render: (_: unknown, r: TravelPlan) => formatDepartureDateWithWeekday(r.saleDate),
+      width: 190,
+      render: (_: unknown, record: TravelPlan) => <SaleTimeCell value={record.saleDate} />,
     },
-    {
-      title: '状态',
-      key: 'status',
-      width: 60,
-      render: (_: unknown, record: TravelPlan) => (
-        <PlanStatusTag status={getPlanStatusForDepartureDate(record.departureDate)} />
-      ),
-    },
+    ...Array.from({ length: maxAdditionalSaleDateCount }, (_, index) => ({
+      title: `开售时间${index + 2}`,
+      key: `additionalSaleDate-${index}`,
+      width: 190,
+      render: (_: unknown, record: TravelPlan) => {
+        const saleDateValue = record.additionalSaleDates?.[index]
+        return <SaleTimeCell value={saleDateValue} />
+      },
+    })),
     {
       title: '始发站',
       dataIndex: 'fromStation',
@@ -146,12 +164,13 @@ export default function PlanSection() {
   return (
     <section className={styles.section}>
       <div className={styles.header}>
-        <div className={styles.headerTitle}>
-          <h2>购票计划</h2>
-          <span className={styles.rule}>
-            开售日期按出行日期提前 14 天自动计算；系统会在开售前 1 天和开售当天 00:00 发送提醒。
-          </span>
-        </div>
+        <SectionTitle
+          title="购票计划"
+          tips={[
+            '首个默认开售时间按出行日期提前 14 天的 08:00 计算，可修改',
+            '可以新增多个开售时间，所有开售时间都会在售前 24 小时和售前 15 分钟发送提醒',
+          ]}
+        />
         <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
           新增购票计划
         </Button>

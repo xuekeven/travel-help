@@ -21,17 +21,30 @@ export function getSaleDate(departureDate: Date | string): string {
   return format(addDays(d, -14), 'yyyy-MM-dd')
 }
 
+/** 根据出行日期计算默认开售时间（提前 14 天的 08:00，中国时区） */
+export function getDefaultSaleTime(departureDate: Date | string): Date {
+  return createDateTimeShanghai(getSaleDate(departureDate), '08:00')!
+}
+
 /**
- * 距开售还有多少天（负数表示已过开售日，0 表示今天开售）
+ * 距开售还有多少个自然日（负数表示已过开售日，0 表示开售日期是今天）
  */
 export function getDaysUntilSale(departureDate: Date | string): number {
-  const saleDate = getSaleDate(departureDate)
+  return getDaysUntilSaleDate(getSaleDate(departureDate))
+}
+
+export function getDaysUntilSaleDate(saleDate: Date | string): number {
   const today = getTodayCN()
-  return differenceInCalendarDays(new Date(saleDate), new Date(today))
+  const saleDateCN = format(toZonedTime(new Date(saleDate), TIMEZONE), 'yyyy-MM-dd')
+  return differenceInCalendarDays(dateOnlyToLocalDate(saleDateCN), dateOnlyToLocalDate(today))
 }
 
 export function getAutoPlanStatus(departureDate: Date | string): 'PENDING_SALE' | 'ON_SALE' {
-  return getDaysUntilSale(departureDate) > 0 ? 'PENDING_SALE' : 'ON_SALE'
+  return getAutoPlanStatusForSaleDate(getDefaultSaleTime(departureDate))
+}
+
+export function getAutoPlanStatusForSaleDate(saleDate: Date | string): 'PENDING_SALE' | 'ON_SALE' {
+  return new Date(saleDate).getTime() > Date.now() ? 'PENDING_SALE' : 'ON_SALE'
 }
 
 /**
@@ -79,6 +92,11 @@ function formatDateOnlyUtc(date: Date): string {
 export function formatDateTimeShanghai(iso: string | Date): string {
   const zoned = toZonedTime(new Date(iso), TIMEZONE)
   return format(zoned, 'yyyy-MM-dd EEE HH:mm:ss', { locale: zhCN })
+}
+
+export function formatSaleDateTimeShanghai(iso: string | Date): string {
+  const zoned = toZonedTime(new Date(iso), TIMEZONE)
+  return format(zoned, 'yyyy-MM-dd EEE HH:mm', { locale: zhCN })
 }
 
 export function createDateTimeShanghai(date: string, time: string): Date | null {

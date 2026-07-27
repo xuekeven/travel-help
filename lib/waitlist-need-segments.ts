@@ -8,6 +8,34 @@ type RawNeed = {
   start_time?: string
   arrive_time?: string
   seat_name?: string
+  seat_type?: string
+}
+
+const SEAT_TYPE_CODE_LABELS: Record<string, string> = {
+  '1': '硬座',
+  '2': '软座',
+  '3': '硬卧',
+  '4': '软卧',
+  '6': '高级软卧',
+  '9': '商务座',
+  A: '高级动卧',
+  F: '动卧',
+  I: '一等卧',
+  J: '二等卧',
+  M: '一等座',
+  O: '二等座',
+  P: '特等座',
+  W: '无座',
+}
+
+function getSeatTypeLabel(need: RawNeed): string {
+  const seatName = need.seat_name?.trim()
+  if (seatName) return seatName
+
+  return [...new Set((need.seat_type ?? '').split(''))]
+    .map((code) => SEAT_TYPE_CODE_LABELS[code] ?? code)
+    .filter(Boolean)
+    .join('、')
 }
 
 /** 从 12306 原始 JSON 的 needs[] 解析每一档候补（多车次、多终到站） */
@@ -24,7 +52,7 @@ export function needSegmentsFromRawData(rawData: Prisma.JsonValue): WaitlistNeed
       toStation: n.to_station_name ?? '',
       departureTime: n.start_time ?? '',
       arrivalTime: n.arrive_time ?? '',
-      seatType: n.seat_name ?? '',
+      seatType: getSeatTypeLabel(n),
     }))
     .filter((s) => s.trainCode)
 }

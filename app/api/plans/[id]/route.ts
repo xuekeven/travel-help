@@ -1,20 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getSaleDate, getDaysUntilSale, getAutoPlanStatus } from '@/lib/date'
+import {
+  getAutoPlanStatusForSaleDate,
+  getDefaultSaleTime,
+  getDaysUntilSaleDate,
+} from '@/lib/date'
 import { deleteMockPlan, isMockDataMode, updateMockPlan } from '@/lib/mock-data'
 import type { PlanStatus, TravelPlan as PrismaPlan } from '@prisma/client'
 
 type Params = { params: Promise<{ id: string }> }
 
 function withSaleInfo(plan: PrismaPlan) {
+  const saleDate = plan.saleDate ?? getDefaultSaleTime(plan.departureDate)
+  const additionalSaleDates = plan.additionalSaleDates ?? []
   return {
     ...plan,
-    status: getAutoPlanStatus(plan.departureDate),
+    status: getAutoPlanStatusForSaleDate(saleDate),
     departureDate: plan.departureDate.toISOString().slice(0, 10),
+    saleDate: saleDate.toISOString(),
+    additionalSaleDates: additionalSaleDates.map((value) => value.toISOString()),
     createdAt: plan.createdAt.toISOString(),
     updatedAt: plan.updatedAt.toISOString(),
-    saleDate: getSaleDate(plan.departureDate),
-    daysUntilSale: getDaysUntilSale(plan.departureDate),
+    daysUntilSale: getDaysUntilSaleDate(saleDate),
   }
 }
 
@@ -23,10 +30,20 @@ export async function POST(request: NextRequest, { params }: Params) {
   const { id } = await params
   const body = await request.json()
   const departureDate = body.departureDate ? new Date(body.departureDate) : undefined
+  const saleDate = body.saleDate
+    ? new Date(body.saleDate)
+    : departureDate
+      ? getDefaultSaleTime(departureDate)
+      : undefined
+  const additionalSaleDates = Array.isArray(body.additionalSaleDates)
+    ? body.additionalSaleDates.map((value: string) => new Date(value))
+    : undefined
 
   if (isMockDataMode()) {
     const plan = updateMockPlan(id, {
       ...(body.departureDate && { departureDate: body.departureDate }),
+      ...(saleDate && { saleDate: body.saleDate ?? saleDate.toISOString() }),
+      ...(additionalSaleDates && { additionalSaleDates: body.additionalSaleDates }),
       ...(body.holidayName !== undefined && { holidayName: body.holidayName || null }),
       ...(body.fromStation && { fromStation: body.fromStation }),
       ...(body.toStation && { toStation: body.toStation }),
@@ -46,6 +63,8 @@ export async function POST(request: NextRequest, { params }: Params) {
     where: { id },
     data: {
       ...(departureDate && { departureDate }),
+      ...(saleDate && { saleDate }),
+      ...(additionalSaleDates && { additionalSaleDates }),
       ...(body.holidayName !== undefined && { holidayName: body.holidayName || null }),
       ...(body.fromStation && { fromStation: body.fromStation }),
       ...(body.toStation && { toStation: body.toStation }),
@@ -55,7 +74,7 @@ export async function POST(request: NextRequest, { params }: Params) {
     },
   })
 
-  const status = getAutoPlanStatus(updatedPlan.departureDate) as PlanStatus
+  const status = getAutoPlanStatusForSaleDate(updatedPlan.saleDate) as PlanStatus
   const plan =
     updatedPlan.status === status
       ? updatedPlan
