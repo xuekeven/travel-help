@@ -6,6 +6,7 @@ import {
   getDaysUntilSaleDate,
 } from '@/lib/date'
 import { deleteMockPlan, isMockDataMode, updateMockPlan } from '@/lib/mock-data'
+import { syncPlanReminderTasks } from '@/lib/plan-reminder'
 import type { PlanStatus, TravelPlan as PrismaPlan } from '@prisma/client'
 
 type Params = { params: Promise<{ id: string }> }
@@ -59,29 +60,34 @@ export async function POST(request: NextRequest, { params }: Params) {
     return NextResponse.json({ data: withSaleInfo(plan) })
   }
 
-  const updatedPlan = await prisma.travelPlan.update({
-    where: { id },
-    data: {
-      ...(departureDate && { departureDate }),
-      ...(saleDate && { saleDate }),
-      ...(additionalSaleDates && { additionalSaleDates }),
-      ...(body.holidayName !== undefined && { holidayName: body.holidayName || null }),
-      ...(body.fromStation && { fromStation: body.fromStation }),
-      ...(body.toStation && { toStation: body.toStation }),
-      ...(body.seatType && { seatType: body.seatType }),
-      ...(body.ticketCount !== undefined && { ticketCount: body.ticketCount }),
-      ...(body.remark !== undefined && { remark: body.remark || null }),
-    },
-  })
+  const plan = await prisma.$transaction(async (tx) => {
+    const updatedPlan = await tx.travelPlan.update({
+      where: { id },
+      data: {
+        ...(departureDate && { departureDate }),
+        ...(saleDate && { saleDate }),
+        ...(additionalSaleDates && { additionalSaleDates }),
+        ...(body.holidayName !== undefined && { holidayName: body.holidayName || null }),
+        ...(body.fromStation && { fromStation: body.fromStation }),
+        ...(body.toStation && { toStation: body.toStation }),
+        ...(body.seatType && { seatType: body.seatType }),
+        ...(body.ticketCount !== undefined && { ticketCount: body.ticketCount }),
+        ...(body.remark !== undefined && { remark: body.remark || null }),
+      },
+    })
 
-  const status = getAutoPlanStatusForSaleDate(updatedPlan.saleDate) as PlanStatus
-  const plan =
-    updatedPlan.status === status
-      ? updatedPlan
-      : await prisma.travelPlan.update({
-          where: { id },
-          data: { status },
-        })
+    const status = getAutoPlanStatusForSaleDate(updatedPlan.saleDate) as PlanStatus
+    const savedPlan =
+      updatedPlan.status === status
+        ? updatedPlan
+        : await tx.travelPlan.update({
+            where: { id },
+            data: { status },
+          })
+
+    await syncPlanReminderTasks(tx, savedPlan.id, savedPlan)
+    return savedPlan
+  })
 
   return NextResponse.json({ data: withSaleInfo(plan) })
 }

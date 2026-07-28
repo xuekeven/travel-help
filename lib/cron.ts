@@ -1,5 +1,5 @@
 import { schedule } from 'node-cron'
-import { addDays, startOfMinute, subDays, subMinutes } from 'date-fns'
+import { addDays } from 'date-fns'
 import { prisma } from '@/lib/prisma'
 import {
   formatDateForReminder,
@@ -9,33 +9,30 @@ import {
 } from '@/lib/date'
 import { sendWeComMessage } from '@/lib/notify'
 import { buildTravelOrderReminder, isActiveTravelOrder } from '@/lib/travel-order'
-import type { TravelPlan, WaitlistOrder } from '@prisma/client'
+import type {
+  PlanReminderTask,
+  PlanReminderType,
+  TravelPlan,
+  WaitlistOrder,
+} from '@prisma/client'
 
 function buildPlanMessage(
   plan: TravelPlan,
-  saleDate: Date,
-  saleDateIndex: number,
-  timing: '发售前 1 天' | '发售前 15 分钟'
+  task: Pick<PlanReminderTask, 'saleDate' | 'saleDateIndex' | 'reminderType'>
 ): string {
   const dateStr = formatDateForReminder(plan.departureDate)
   const weekday = formatWeekdayForReminder(plan.departureDate)
-  const saleDateLabel = saleDateIndex === 0 ? '开售时间' : `开售时间${saleDateIndex + 1}`
-  const saleDateText = formatSaleDateTimeShanghai(saleDate)
+  const saleDateLabel =
+    task.saleDateIndex === 0 ? '开售时间' : `开售时间${task.saleDateIndex + 1}`
+  const saleDateText = formatSaleDateTimeShanghai(task.saleDate)
+  const timing = getReminderTimingLabel(task.reminderType)
   return `【${dateStr}】【${weekday}】【${plan.fromStation}】到【${plan.toStation}】的火车票，【${saleDateLabel}：${saleDateText}】，这是${timing}提醒，请关注`
 }
 
-function getSaleReminderTiming(
-  saleDate: Date,
-  now: Date
-): '发售前 1 天' | '发售前 15 分钟' | null {
-  const currentMinute = startOfMinute(now).getTime()
-  if (startOfMinute(subDays(saleDate, 1)).getTime() === currentMinute) {
-    return '发售前 1 天'
-  }
-  if (startOfMinute(subMinutes(saleDate, 15)).getTime() === currentMinute) {
-    return '发售前 15 分钟'
-  }
-  return null
+function getReminderTimingLabel(
+  reminderType: PlanReminderType
+): '发售前 1 天' | '发售前 15 分钟' {
+  return reminderType === 'ONE_DAY_BEFORE' ? '发售前 1 天' : '发售前 15 分钟'
 }
 
 function buildWaitlistMessage(order: WaitlistOrder, daysUntilDeparture: 0 | 1 | 2): string {
@@ -49,29 +46,88 @@ function isPendingWaitlistOrder(order: WaitlistOrder): boolean {
   return !/(已兑现|兑现成功|成功|已取消|取消|退单|已退|已关闭|关闭)/.test(order.status)
 }
 
-async function runSaleReminder(now = new Date()) {
-  try {
-    const plans = await prisma.travelPlan.findMany()
-    const reminders = plans.flatMap((plan) =>
-      [plan.saleDate, ...plan.additionalSaleDates].flatMap((saleDate, saleDateIndex) => {
-        const timing = getSaleReminderTiming(saleDate, now)
-        return timing ? [{ plan, saleDate, saleDateIndex, timing }] : []
-      })
-    )
+type ProcessReminderResult = 'empty' | 'sent' | 'failed'
 
-    for (const reminder of reminders) {
-      await sendWeComMessage(
-        buildPlanMessage(
-          reminder.plan,
-          reminder.saleDate,
-          reminder.saleDateIndex,
-          reminder.timing
-        )
-      )
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error)
+}
+
+async function processNextDuePlanReminder(now: Date): Promise<ProcessReminderResult> {
+  return prisma.$transaction(
+    async (tx) => {
+      const dueTasks = await tx.$queryRaw<Array<{ id: string }>>`
+        SELECT "id"
+        FROM "plan_reminder_tasks"
+        WHERE "status" = 'PENDING'::"ReminderStatus"
+          AND "reminderAt" <= ${now}
+        ORDER BY "reminderAt" ASC
+        LIMIT 1
+        FOR UPDATE SKIP LOCKED
+      `
+      const dueTask = dueTasks[0]
+      if (!dueTask) return 'empty'
+
+      const task = await tx.planReminderTask.findUnique({
+        where: { id: dueTask.id },
+        include: { plan: true },
+      })
+      if (!task) return 'empty'
+
+      try {
+        const delivered = await sendWeComMessage(buildPlanMessage(task.plan, task))
+        if (!delivered) {
+          await tx.planReminderTask.update({
+            where: { id: task.id },
+            data: {
+              attempts: { increment: 1 },
+              lastError: '未配置企业微信中转，提醒尚未发送',
+            },
+          })
+          return 'failed'
+        }
+      } catch (error) {
+        await tx.planReminderTask.update({
+          where: { id: task.id },
+          data: {
+            attempts: { increment: 1 },
+            lastError: getErrorMessage(error),
+          },
+        })
+        console.error(`[Cron] 购票提醒发送失败，任务 ${task.id} 将在下分钟重试：`, error)
+        return 'failed'
+      }
+
+      await tx.planReminderTask.update({
+        where: { id: task.id },
+        data: {
+          status: 'SENT',
+          sentAt: new Date(),
+          attempts: { increment: 1 },
+          lastError: null,
+        },
+      })
+      return 'sent'
+    },
+    {
+      maxWait: 5_000,
+      timeout: 60_000,
+    }
+  )
+}
+
+async function runSaleReminder(now = new Date()) {
+  const batchSize = 100
+  let sentCount = 0
+
+  try {
+    while (sentCount < batchSize) {
+      const result = await processNextDuePlanReminder(now)
+      if (result === 'empty' || result === 'failed') break
+      sentCount += 1
     }
 
-    if (reminders.length > 0) {
-      console.log(`[Cron] 购票提醒完成：发送 ${reminders.length} 条`)
+    if (sentCount > 0) {
+      console.log(`[Cron] 购票提醒完成：发送 ${sentCount} 条`)
     }
   } catch (err) {
     console.error('[Cron] 购票提醒执行异常：', err)
@@ -140,4 +196,4 @@ export function startCronJobs() {
 }
 
 // 供手动调试：直接执行一次任务逻辑
-export { getSaleReminderTiming, runDailyReminder, runSaleReminder }
+export { processNextDuePlanReminder, runDailyReminder, runSaleReminder }

@@ -10,7 +10,7 @@ export function isWeComRelayConfigured(): boolean {
   )
 }
 
-export async function sendWeComMessage(content: string): Promise<void> {
+export async function sendWeComMessage(content: string): Promise<boolean> {
   const timestamp = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })
   const baseUrl = process.env.WEWORK_RELAY_BASE_URL?.trim().replace(/\/$/, '')
   const apiKey = process.env.WEWORK_RELAY_API_KEY?.trim()
@@ -23,7 +23,7 @@ export async function sendWeComMessage(content: string): Promise<void> {
     console.warn(
       '[企微通知] 未配置 WEWORK_RELAY_BASE_URL / WEWORK_RELAY_API_KEY，跳过发送（仅控制台）'
     )
-    return
+    return false
   }
 
   const body: { content: string; touser?: string } = { content }
@@ -56,4 +56,6 @@ export async function sendWeComMessage(content: string): Promise<void> {
   if (json != null && json.errcode !== 0) {
     throw new Error(`企微返回 errcode=${json.errcode}: ${json.errmsg ?? 'unknown'}`)
   }
+
+  return true
 }

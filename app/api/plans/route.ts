@@ -6,6 +6,7 @@ import {
   getDaysUntilSaleDate,
 } from '@/lib/date'
 import { createMockPlan, getMockStore, isMockDataMode } from '@/lib/mock-data'
+import { syncPlanReminderTasks } from '@/lib/plan-reminder'
 import type { PlanStatus, TravelPlan as PrismaPlan } from '@prisma/client'
 
 function withSaleInfo(plan: PrismaPlan) {
@@ -60,19 +61,25 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ data: withSaleInfo(plan) }, { status: 201 })
   }
 
-  const plan = await prisma.travelPlan.create({
-    data: {
-      departureDate,
-      saleDate,
-      additionalSaleDates,
-      holidayName: body.holidayName || null,
-      fromStation: body.fromStation,
-      toStation: body.toStation,
-      seatType: body.seatType,
-      ticketCount: body.ticketCount ?? 1,
-      status: getAutoPlanStatusForSaleDate(saleDate) as PlanStatus,
-      remark: body.remark || null,
-    },
+  const plan = await prisma.$transaction(async (tx) => {
+    const createdPlan = await tx.travelPlan.create({
+      data: {
+        departureDate,
+        saleDate,
+        additionalSaleDates,
+        holidayName: body.holidayName || null,
+        fromStation: body.fromStation,
+        toStation: body.toStation,
+        seatType: body.seatType,
+        ticketCount: body.ticketCount ?? 1,
+        status: getAutoPlanStatusForSaleDate(saleDate) as PlanStatus,
+        remark: body.remark || null,
+      },
+    })
+
+    await syncPlanReminderTasks(tx, createdPlan.id, createdPlan)
+    return createdPlan
   })
+
   return NextResponse.json({ data: withSaleInfo(plan) }, { status: 201 })
 }

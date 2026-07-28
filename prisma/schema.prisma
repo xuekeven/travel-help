@@ -25,22 +25,53 @@ enum PlanStatus {
   CANCELLED
 }
 
+enum PlanReminderType {
+  ONE_DAY_BEFORE
+  FIFTEEN_MINUTES_BEFORE
+}
+
+enum ReminderStatus {
+  PENDING
+  SENT
+}
+
 model TravelPlan {
-  id                  String     @id @default(uuid())
-  departureDate       DateTime   @db.Date
+  id                  String             @id @default(uuid())
+  departureDate       DateTime           @db.Date
   saleDate            DateTime
-  additionalSaleDates DateTime[] @default([])
+  additionalSaleDates DateTime[]         @default([])
   holidayName         String?
   fromStation         String
   toStation           String
   seatType            SeatType
-  ticketCount         Int        @default(1)
-  status              PlanStatus @default(PENDING_SALE)
+  ticketCount         Int                @default(1)
+  status              PlanStatus         @default(PENDING_SALE)
   remark              String?
-  createdAt           DateTime   @default(now())
-  updatedAt           DateTime   @updatedAt
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  reminderTasks       PlanReminderTask[]
 
   @@map("travel_plans")
+}
+
+model PlanReminderTask {
+  id            String           @id @default(uuid())
+  planId        String
+  reminderAt    DateTime
+  saleDate      DateTime
+  saleDateIndex Int
+  reminderType  PlanReminderType
+  status        ReminderStatus   @default(PENDING)
+  sentAt        DateTime?
+  attempts      Int              @default(0)
+  lastError     String?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  plan          TravelPlan       @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@unique([planId, reminderAt])
+  @@index([status, reminderAt])
+  @@map("plan_reminder_tasks")
 }
 
 model WaitlistOrder {
@@ -64,12 +95,12 @@ model WaitlistOrder {
 }
 
 model TravelOrder {
-  id                String   @id @default(uuid())
-  orderNo           String   @unique
+  id                String    @id @default(uuid())
+  orderNo           String    @unique
   orderDate         DateTime
-  departureDate     DateTime @db.Date
+  departureDate     DateTime  @db.Date
   departureTime     String
-  arrivalDate      DateTime? @db.Date
+  arrivalDate       DateTime? @db.Date
   arrivalTime       String
   fromStation       String
   toStation         String
@@ -83,7 +114,7 @@ model TravelOrder {
   ticketTypeNames   String[]
   ticketStatusNames String[]
   ticketCount       Int
-  totalPrice        Decimal  @db.Decimal(10, 1)
+  totalPrice        Decimal   @db.Decimal(10, 1)
   ticketSnapshots   Json
   cancelFlag        String?
   resignFlag        String?
@@ -92,8 +123,8 @@ model TravelOrder {
   confirmFlag       String?
   orderStatus       String?
   rawData           Json
-  syncedAt          DateTime @default(now()) @updatedAt
-  createdAt         DateTime @default(now())
+  syncedAt          DateTime  @default(now()) @updatedAt
+  createdAt         DateTime  @default(now())
 
   @@map("travel_orders")
 }
