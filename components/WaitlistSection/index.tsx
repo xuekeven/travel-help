@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
-import { Spin, Empty, Typography } from 'antd'
+import { Spin, Empty, Typography, message } from 'antd'
 import type { WaitlistGroup } from '@/types'
 import { withBasePath } from '@/lib/with-base-path'
 import { formatDateTimeShanghai } from '@/lib/date'
@@ -43,7 +43,9 @@ export default function WaitlistSection() {
     try {
       const { sortBy, sortDir } = parseSortOption(sortOption)
       const res = await fetch(withBasePath(`/api/waitlist?sortBy=${sortBy}&sortDir=${sortDir}`))
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const json = await res.json()
+      if (!Array.isArray(json.data)) throw new Error('响应数据格式不正确')
       setGroups(json.data)
       if (json.data.length > 0) {
         const allOrders = json.data.flatMap((g: WaitlistGroup) => g.orders)
@@ -52,6 +54,9 @@ export default function WaitlistSection() {
         )[0]
         setLastSynced(latest?.syncedAt ?? null)
       }
+    } catch (error) {
+      console.error('[候补订单] 加载失败：', error)
+      message.error('候补订单加载失败，请稍后重试')
     } finally {
       setLoading(false)
     }

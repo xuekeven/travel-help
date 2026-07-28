@@ -35,7 +35,7 @@
   function getPathname(url) {
     try {
       return new URL(url, window.location.origin).pathname
-    } catch (e) {
+    } catch {
       return ''
     }
   }

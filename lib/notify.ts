@@ -10,14 +10,24 @@ export function isWeComRelayConfigured(): boolean {
   )
 }
 
-export async function sendWeComMessage(content: string): Promise<boolean> {
+type SendWeComMessageOptions = {
+  idempotencyKey?: string
+  timeoutMs?: number
+}
+
+export async function sendWeComMessage(
+  content: string,
+  options: SendWeComMessageOptions = {}
+): Promise<boolean> {
   const timestamp = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })
   const baseUrl = process.env.WEWORK_RELAY_BASE_URL?.trim().replace(/\/$/, '')
   const apiKey = process.env.WEWORK_RELAY_API_KEY?.trim()
   const touser = process.env.WECOM_TO_USER?.trim()
+  const timeoutMs = options.timeoutMs ?? 10_000
 
-  console.log(`[企微通知] ${timestamp}`)
-  console.log(`  内容：${content}`)
+  console.log(
+    `[企微通知] ${timestamp} 请求发送，长度=${content.length}，幂等键=${options.idempotencyKey ?? '无'}`
+  )
 
   if (!baseUrl || !apiKey) {
     console.warn(
@@ -30,13 +40,19 @@ export async function sendWeComMessage(content: string): Promise<boolean> {
   if (touser) body.touser = touser
 
   const url = `${baseUrl}/wework/send/message`
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${apiKey}`,
+    'Content-Type': 'application/json',
+  }
+  if (options.idempotencyKey) {
+    headers['Idempotency-Key'] = options.idempotencyKey
+  }
+
   const res = await fetch(url, {
     method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
+    headers,
     body: JSON.stringify(body),
+    signal: AbortSignal.timeout(timeoutMs),
   })
 
   const text = await res.text()

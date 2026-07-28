@@ -9,9 +9,12 @@
   },
   "options_page": "options.html",
   "host_permissions": [
-    "https://kyfw.12306.cn/*",
-    "http://*/*",
-    "https://*/*"
+    "https://kyfw.12306.cn/*"
+  ],
+  "optional_host_permissions": [
+    "http://localhost/*",
+    "http://127.0.0.1/*",
+    "https://*.tailed5977.ts.net/*"
   ],
   "content_scripts": [
     {

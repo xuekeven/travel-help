@@ -25,53 +25,58 @@ enum PlanStatus {
   CANCELLED
 }
 
-enum PlanReminderType {
-  ONE_DAY_BEFORE
-  FIFTEEN_MINUTES_BEFORE
+enum ReminderKind {
+  PLAN_SALE
+  TRAVEL_ORDER
+  WAITLIST_ORDER
 }
 
 enum ReminderStatus {
   PENDING
+  PROCESSING
   SENT
+  CANCELLED
 }
 
 model TravelPlan {
-  id                  String             @id @default(uuid())
-  departureDate       DateTime           @db.Date
+  id                  String     @id @default(uuid())
+  departureDate       DateTime   @db.Date
   saleDate            DateTime
-  additionalSaleDates DateTime[]         @default([])
+  additionalSaleDates DateTime[] @default([])
   holidayName         String?
   fromStation         String
   toStation           String
   seatType            SeatType
-  ticketCount         Int                @default(1)
-  status              PlanStatus         @default(PENDING_SALE)
+  ticketCount         Int        @default(1)
+  status              PlanStatus @default(PENDING_SALE)
   remark              String?
-  createdAt           DateTime           @default(now())
-  updatedAt           DateTime           @updatedAt
-  reminderTasks       PlanReminderTask[]
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
 
   @@map("travel_plans")
 }
 
-model PlanReminderTask {
-  id            String           @id @default(uuid())
-  planId        String
-  reminderAt    DateTime
-  saleDate      DateTime
-  saleDateIndex Int
-  reminderType  PlanReminderType
-  status        ReminderStatus   @default(PENDING)
-  sentAt        DateTime?
-  attempts      Int              @default(0)
-  lastError     String?
-  createdAt     DateTime         @default(now())
-  updatedAt     DateTime         @updatedAt
-  plan          TravelPlan       @relation(fields: [planId], references: [id], onDelete: Cascade)
+model ReminderTask {
+  id          String         @id @default(uuid())
+  dedupeKey   String         @unique
+  kind        ReminderKind
+  sourceId    String
+  scheduledAt DateTime
+  expiresAt   DateTime
+  payload     Json
+  status      ReminderStatus @default(PENDING)
+  nextRetryAt DateTime
+  lockedAt    DateTime?
+  lockOwner   String?
+  sentAt      DateTime?
+  attempts    Int            @default(0)
+  lastError   String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
 
-  @@unique([planId, reminderAt])
-  @@index([status, reminderAt])
-  @@map("plan_reminder_tasks")
+  @@index([status, nextRetryAt, scheduledAt])
+  @@index([kind, sourceId])
+  @@map("reminder_tasks")
 }
 
 model WaitlistOrder {

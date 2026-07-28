@@ -1,26 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { hasValidSyncToken } from '@/lib/api-auth'
 import { mergeExtensionCors, optionsExtensionCors } from '@/lib/extension-cors'
 import { isMockDataMode, replaceMockWaitlistOrders } from '@/lib/mock-data'
+import { syncWaitlistReminderTasks } from '@/lib/reminder-task'
+import { normalizeWaitlistOrders } from '@/lib/waitlist-validation'
 
 export function OPTIONS() {
   return optionsExtensionCors()
 }
 
 export async function POST(request: NextRequest) {
-  const token = request.headers.get('x-sync-token')
-  if (!isMockDataMode() && token !== process.env.EXTENSION_SYNC_TOKEN) {
+  if (!isMockDataMode() && !hasValidSyncToken(request)) {
     return mergeExtensionCors(NextResponse.json({ error: 'Unauthorized' }, { status: 401 }))
   }
 
-  const body = await request.json()
-  const orders = Array.isArray(body?.orders) ? body.orders : []
-
-  if (orders.some((order: any) => !order?.orderNo)) {
+  const body = await request.json().catch(() => null)
+  const parsed = normalizeWaitlistOrders(body)
+  if (!parsed.ok) {
     return mergeExtensionCors(
-      NextResponse.json({ error: 'orders 数据格式不正确' }, { status: 400 })
+      NextResponse.json({ error: parsed.error }, { status: 400 })
     )
   }
+  const orders = parsed.orders
 
   if (isMockDataMode()) {
     const count = replaceMockWaitlistOrders(orders)
@@ -30,24 +32,13 @@ export async function POST(request: NextRequest) {
   await prisma.$transaction(async (tx) => {
     await tx.waitlistOrder.deleteMany({})
 
-    if (orders.length === 0) return
+    if (orders.length > 0) {
+      await tx.waitlistOrder.createMany({
+        data: orders,
+      })
+    }
 
-    await tx.waitlistOrder.createMany({
-      data: orders.map((order: any) => ({
-        orderNo: order.orderNo,
-        departureDate: new Date(order.departureDate),
-        fromStation: order.fromStation,
-        toStation: order.toStation,
-        trainNumbers: order.trainNumbers,
-        seatType: order.seatType,
-        ticketCount: order.ticketCount,
-        price: order.price,
-        departureTime: order.departureTime,
-        arrivalTime: order.arrivalTime,
-        status: order.status,
-        rawData: order.rawData ?? {},
-      })),
-    })
+    await syncWaitlistReminderTasks(tx, orders)
   })
 
   return mergeExtensionCors(NextResponse.json({ success: true, count: orders.length }))

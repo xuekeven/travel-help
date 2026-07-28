@@ -5,7 +5,7 @@
 ## 主要功能
 
 - **购票计划**：记录出行日期、车站、席别和开售时间；支持多个开售时间，并通过持久化任务在售前 24 小时和售前 15 分钟可靠提醒。
-- **出行订单**：通过 Chrome 插件同步 12306 未出行订单，展示车次、旅客、席位、票价和退票费用；在出行日期前 2 天、前 1 天和当天的 00:00 提醒。
+- **出行订单**：通过 Chrome 插件同步 12306 未出行订单，展示车次、旅客、席位、票价和退票费用；在出行日期前 2 天、前 1 天和当天的 00:00 生成持久化提醒。
 - **候补订单**：通过 Chrome 插件同步候补订单，按行程分组展示候补车次、座位和状态；未候补成功时发送临近出行提醒。
 
 ## 技术组成
@@ -18,6 +18,9 @@
 - 企业微信消息中转服务（可选）
 
 项目没有需要单独启动的后端服务。`pnpm dev` 会同时启动 Next.js 页面、API 路由和定时提醒任务。
+
+三类提醒统一写入 PostgreSQL 队列。消费者每分钟只抢占到期任务，发送失败按
+1、2、5、10、30、60 分钟退避重试；服务短时重启后会继续处理未过期任务。
 
 ## 本地运行
 
@@ -60,11 +63,23 @@ WECOM_TO_USER="your-user-id"
 ## 生产部署
 
 ```bash
+pnpm install --frozen-lockfile
 pnpm build
-pm2 start ecosystem.config.js
+pnpm prisma migrate deploy
+pm2 startOrReload ecosystem.config.js
 pm2 save
 ```
 
 `ecosystem.config.js` 会通过 `pnpm start` 运行 Next.js，并由 PM2 负责进程守护、自动重启和日志管理。生产环境通过 nginx 挂载到 `/12306/` 时，由 nginx 将 `/12306/` 转发到 Next.js 根路径。详细配置见 [docs/5.生产部署.md](docs/5.生产部署.md)。
+
+## 质量检查
+
+```bash
+pnpm test
+pnpm lint
+pnpm typecheck
+pnpm build
+pnpm audit --prod
+```
 
 更多需求、架构和通知说明位于 [docs/](docs/)。

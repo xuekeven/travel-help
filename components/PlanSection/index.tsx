@@ -33,8 +33,13 @@ export default function PlanSection() {
     setLoading(true)
     try {
       const res = await fetch(withBasePath('/api/plans'))
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const json = await res.json()
+      if (!Array.isArray(json.data)) throw new Error('响应数据格式不正确')
       setPlans(json.data)
+    } catch (error) {
+      console.error('[购票计划] 加载失败：', error)
+      message.error('购票计划加载失败，请稍后重试')
     } finally {
       setLoading(false)
     }

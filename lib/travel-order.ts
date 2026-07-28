@@ -237,6 +237,25 @@ export function isActiveTravelOrder(order: {
   return !/(已取消|取消|已退票|退票|已改签|改签成功|已改签失败|改签失败|已出站|出站|已关闭|关闭|退单)/.test(text)
 }
 
+export function isValidNormalizedTravelOrder(order: NormalizedTravelOrder): boolean {
+  return Boolean(
+    order.orderNo &&
+      !Number.isNaN(order.orderDate.getTime()) &&
+      !Number.isNaN(order.departureDate.getTime()) &&
+      /^([01]\d|2[0-3]):[0-5]\d$/.test(order.departureTime) &&
+      /^([01]\d|2[0-3]):[0-5]\d$/.test(order.arrivalTime) &&
+      order.fromStation &&
+      order.toStation &&
+      order.trainCode &&
+      order.passengerNames.length > 0 &&
+      Number.isInteger(order.ticketCount) &&
+      order.ticketCount > 0 &&
+      order.ticketCount <= 20 &&
+      order.totalPrice.isFinite() &&
+      !order.totalPrice.isNegative()
+  )
+}
+
 function deriveOrderStatus(order: RawOrder, ticketStatusNames: string[]): string | null {
   const preferred = [
     order?.ticket_status_name_page,
@@ -263,7 +282,12 @@ function parseDateOnly(value: unknown): Date | null {
 }
 
 function createUtcDateOnly(year: number, month: number, day: number): Date {
-  return new Date(Date.UTC(year, month - 1, day))
+  const date = new Date(Date.UTC(year, month - 1, day))
+  return date.getUTCFullYear() === year &&
+    date.getUTCMonth() === month - 1 &&
+    date.getUTCDate() === day
+    ? date
+    : new Date(Number.NaN)
 }
 
 function parseDateTime(value: unknown): Date | null {

@@ -15,6 +15,20 @@ function normalizeServerBase(input) {
   return s
 }
 
+async function ensureServerPermission(serverUrl) {
+  let origin
+  try {
+    const parsed = new URL(serverUrl)
+    if (!['http:', 'https:'].includes(parsed.protocol)) return false
+    origin = `${parsed.origin}/*`
+  } catch {
+    return false
+  }
+
+  const granted = await chrome.permissions.contains({ origins: [origin] })
+  return granted || chrome.permissions.request({ origins: [origin] })
+}
+
 chrome.storage.sync.get(['enabled', 'serverUrl', 'syncToken'], (result) => {
   enabledInput.checked = result.enabled === true
   if (result.serverUrl) {
@@ -23,10 +37,15 @@ chrome.storage.sync.get(['enabled', 'serverUrl', 'syncToken'], (result) => {
   if (result.syncToken) syncTokenInput.value = result.syncToken
 })
 
-saveBtn.addEventListener('click', () => {
+saveBtn.addEventListener('click', async () => {
   const enabled = enabledInput.checked
   const url = normalizeServerBase(serverUrlInput.value)
   const token = syncTokenInput.value.trim()
+
+  if (!url || !(await ensureServerPermission(url))) {
+    showTestResult('请填写有效地址并允许访问该服务器', false)
+    return
+  }
 
   chrome.storage.sync.set({ enabled, serverUrl: url, syncToken: token }, () => {
     savedTip.style.display = 'block'
@@ -51,6 +70,10 @@ testBtn.addEventListener('click', async () => {
   testBtn.disabled = true
 
   try {
+    if (!(await ensureServerPermission(url))) {
+      showTestResult('未获得该服务器的访问权限', false)
+      return
+    }
     const res = await chrome.runtime.sendMessage({
       type: 'TEST_NOTIFY',
       serverUrl: url,

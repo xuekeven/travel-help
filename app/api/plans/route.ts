@@ -6,7 +6,8 @@ import {
   getDaysUntilSaleDate,
 } from '@/lib/date'
 import { createMockPlan, getMockStore, isMockDataMode } from '@/lib/mock-data'
-import { syncPlanReminderTasks } from '@/lib/plan-reminder'
+import { parsePlanCreateInput } from '@/lib/plan-validation'
+import { syncPlanReminderTasks } from '@/lib/reminder-task'
 import type { PlanStatus, TravelPlan as PrismaPlan } from '@prisma/client'
 
 function withSaleInfo(plan: PrismaPlan) {
@@ -39,24 +40,26 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const body = await request.json()
-  const departureDate = new Date(body.departureDate)
-  const saleDate = body.saleDate ? new Date(body.saleDate) : getDefaultSaleTime(departureDate)
-  const additionalSaleDates = Array.isArray(body.additionalSaleDates)
-    ? body.additionalSaleDates.map((value: string) => new Date(value))
-    : []
+  const body = await request.json().catch(() => null)
+  const parsed = parsePlanCreateInput(body)
+  if (!parsed.ok) {
+    return NextResponse.json({ error: parsed.error }, { status: 400 })
+  }
+
+  const input = parsed.data
+  const saleDate = input.saleDate ?? getDefaultSaleTime(input.departureDate)
 
   if (isMockDataMode()) {
     const plan = createMockPlan({
-      departureDate: body.departureDate,
-      saleDate: body.saleDate,
-      additionalSaleDates: body.additionalSaleDates,
-      holidayName: body.holidayName || null,
-      fromStation: body.fromStation,
-      toStation: body.toStation,
-      seatType: body.seatType,
-      ticketCount: body.ticketCount ?? 1,
-      remark: body.remark || null,
+      departureDate: input.departureDate.toISOString().slice(0, 10),
+      saleDate: saleDate.toISOString(),
+      additionalSaleDates: input.additionalSaleDates.map((date) => date.toISOString()),
+      holidayName: input.holidayName,
+      fromStation: input.fromStation,
+      toStation: input.toStation,
+      seatType: input.seatType,
+      ticketCount: input.ticketCount,
+      remark: input.remark,
     })
     return NextResponse.json({ data: withSaleInfo(plan) }, { status: 201 })
   }
@@ -64,20 +67,20 @@ export async function POST(request: NextRequest) {
   const plan = await prisma.$transaction(async (tx) => {
     const createdPlan = await tx.travelPlan.create({
       data: {
-        departureDate,
+        departureDate: input.departureDate,
         saleDate,
-        additionalSaleDates,
-        holidayName: body.holidayName || null,
-        fromStation: body.fromStation,
-        toStation: body.toStation,
-        seatType: body.seatType,
-        ticketCount: body.ticketCount ?? 1,
+        additionalSaleDates: input.additionalSaleDates,
+        holidayName: input.holidayName,
+        fromStation: input.fromStation,
+        toStation: input.toStation,
+        seatType: input.seatType,
+        ticketCount: input.ticketCount,
         status: getAutoPlanStatusForSaleDate(saleDate) as PlanStatus,
-        remark: body.remark || null,
+        remark: input.remark,
       },
     })
 
-    await syncPlanReminderTasks(tx, createdPlan.id, createdPlan)
+    await syncPlanReminderTasks(tx, createdPlan)
     return createdPlan
   })
 

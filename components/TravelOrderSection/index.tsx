@@ -1,6 +1,6 @@
 'use client'
 import { useCallback, useEffect, useState } from 'react'
-import { Empty, Spin, Typography } from 'antd'
+import { Empty, Spin, Typography, message } from 'antd'
 import type { TravelOrder } from '@/types'
 import { withBasePath } from '@/lib/with-base-path'
 import { toZonedTime } from 'date-fns-tz'
@@ -167,9 +167,14 @@ export default function TravelOrderSection() {
     setLoading(true)
     try {
       const res = await fetch(withBasePath(`/api/travel-orders?sortDir=${sortDir}`))
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const json = await res.json()
+      if (!Array.isArray(json.data)) throw new Error('响应数据格式不正确')
       setOrders(json.data ?? [])
       setLastSynced(json.lastSynced ?? null)
+    } catch (error) {
+      console.error('[出行订单] 加载失败：', error)
+      message.error('出行订单加载失败，请稍后重试')
     } finally {
       setLoading(false)
     }

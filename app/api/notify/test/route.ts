@@ -1,14 +1,25 @@
-import { NextResponse } from 'next/server'
+import { randomUUID } from 'node:crypto'
+import { NextRequest, NextResponse } from 'next/server'
+import { hasValidSyncToken } from '@/lib/api-auth'
 import { isWeComRelayConfigured, sendWeComMessage } from '@/lib/notify'
 import { mergeExtensionCors, optionsExtensionCors } from '@/lib/extension-cors'
+import { isMockDataMode } from '@/lib/mock-data'
 
 export function OPTIONS() {
   return optionsExtensionCors()
 }
 
-export async function POST() {
+export async function POST(request: NextRequest) {
+  if (!isMockDataMode() && !hasValidSyncToken(request)) {
+    return mergeExtensionCors(
+      NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    )
+  }
+
   try {
-    await sendWeComMessage('这是一条来自 12306 买票助手的测试通知，服务运行正常 ✅')
+    await sendWeComMessage('这是一条来自 12306 买票助手的测试通知，服务运行正常', {
+      idempotencyKey: `test:${randomUUID()}`,
+    })
     const relayOn = isWeComRelayConfigured()
     return mergeExtensionCors(
       NextResponse.json({

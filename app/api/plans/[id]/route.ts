@@ -6,7 +6,8 @@ import {
   getDaysUntilSaleDate,
 } from '@/lib/date'
 import { deleteMockPlan, isMockDataMode, updateMockPlan } from '@/lib/mock-data'
-import { syncPlanReminderTasks } from '@/lib/plan-reminder'
+import { parsePlanUpdateInput } from '@/lib/plan-validation'
+import { cancelPlanReminderTasks, syncPlanReminderTasks } from '@/lib/reminder-task'
 import type { PlanStatus, TravelPlan as PrismaPlan } from '@prisma/client'
 
 type Params = { params: Promise<{ id: string }> }
@@ -29,28 +30,32 @@ function withSaleInfo(plan: PrismaPlan) {
 // POST /api/plans/:id → 更新
 export async function POST(request: NextRequest, { params }: Params) {
   const { id } = await params
-  const body = await request.json()
-  const departureDate = body.departureDate ? new Date(body.departureDate) : undefined
-  const saleDate = body.saleDate
-    ? new Date(body.saleDate)
-    : departureDate
-      ? getDefaultSaleTime(departureDate)
-      : undefined
-  const additionalSaleDates = Array.isArray(body.additionalSaleDates)
-    ? body.additionalSaleDates.map((value: string) => new Date(value))
-    : undefined
+  const body = await request.json().catch(() => null)
+  const parsed = parsePlanUpdateInput(body)
+  if (!parsed.ok) {
+    return NextResponse.json({ error: parsed.error }, { status: 400 })
+  }
+
+  const input = parsed.data
+  const saleDate =
+    input.saleDate ??
+    (input.departureDate ? getDefaultSaleTime(input.departureDate) : undefined)
 
   if (isMockDataMode()) {
     const plan = updateMockPlan(id, {
-      ...(body.departureDate && { departureDate: body.departureDate }),
-      ...(saleDate && { saleDate: body.saleDate ?? saleDate.toISOString() }),
-      ...(additionalSaleDates && { additionalSaleDates: body.additionalSaleDates }),
-      ...(body.holidayName !== undefined && { holidayName: body.holidayName || null }),
-      ...(body.fromStation && { fromStation: body.fromStation }),
-      ...(body.toStation && { toStation: body.toStation }),
-      ...(body.seatType && { seatType: body.seatType }),
-      ...(body.ticketCount !== undefined && { ticketCount: body.ticketCount }),
-      ...(body.remark !== undefined && { remark: body.remark || null }),
+      ...(input.departureDate && {
+        departureDate: input.departureDate.toISOString().slice(0, 10),
+      }),
+      ...(saleDate && { saleDate: saleDate.toISOString() }),
+      ...(input.additionalSaleDates && {
+        additionalSaleDates: input.additionalSaleDates.map((date) => date.toISOString()),
+      }),
+      ...('holidayName' in input && { holidayName: input.holidayName }),
+      ...(input.fromStation && { fromStation: input.fromStation }),
+      ...(input.toStation && { toStation: input.toStation }),
+      ...(input.seatType && { seatType: input.seatType }),
+      ...(input.ticketCount !== undefined && { ticketCount: input.ticketCount }),
+      ...('remark' in input && { remark: input.remark }),
     })
 
     if (!plan) {
@@ -64,15 +69,17 @@ export async function POST(request: NextRequest, { params }: Params) {
     const updatedPlan = await tx.travelPlan.update({
       where: { id },
       data: {
-        ...(departureDate && { departureDate }),
+        ...(input.departureDate && { departureDate: input.departureDate }),
         ...(saleDate && { saleDate }),
-        ...(additionalSaleDates && { additionalSaleDates }),
-        ...(body.holidayName !== undefined && { holidayName: body.holidayName || null }),
-        ...(body.fromStation && { fromStation: body.fromStation }),
-        ...(body.toStation && { toStation: body.toStation }),
-        ...(body.seatType && { seatType: body.seatType }),
-        ...(body.ticketCount !== undefined && { ticketCount: body.ticketCount }),
-        ...(body.remark !== undefined && { remark: body.remark || null }),
+        ...(input.additionalSaleDates && {
+          additionalSaleDates: input.additionalSaleDates,
+        }),
+        ...('holidayName' in input && { holidayName: input.holidayName }),
+        ...(input.fromStation && { fromStation: input.fromStation }),
+        ...(input.toStation && { toStation: input.toStation }),
+        ...(input.seatType && { seatType: input.seatType }),
+        ...(input.ticketCount !== undefined && { ticketCount: input.ticketCount }),
+        ...('remark' in input && { remark: input.remark }),
       },
     })
 
@@ -85,7 +92,7 @@ export async function POST(request: NextRequest, { params }: Params) {
             data: { status },
           })
 
-    await syncPlanReminderTasks(tx, savedPlan.id, savedPlan)
+    await syncPlanReminderTasks(tx, savedPlan)
     return savedPlan
   })
 
@@ -101,6 +108,9 @@ export async function DELETE(_request: NextRequest, { params }: Params) {
     return new NextResponse(null, { status: 204 })
   }
 
-  await prisma.travelPlan.delete({ where: { id } })
+  await prisma.$transaction(async (tx) => {
+    await cancelPlanReminderTasks(tx, id)
+    await tx.travelPlan.delete({ where: { id } })
+  })
   return new NextResponse(null, { status: 204 })
 }
