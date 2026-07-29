@@ -135,6 +135,7 @@ export function buildWaitlistReminderSeeds(
         scheduledAt,
         expiresAt: addDays(scheduledAt, 1),
         payload: {
+          orderNo: order.orderNo,
           departureDate: formatDateForReminder(order.departureDate),
           fromStation: order.fromStation,
           toStation: order.toStation,
@@ -292,11 +293,13 @@ export function buildReminderMessage(
   }
 
   const departureDate = getString(data.departureDate)
+  const orderNo = getOptionalString(data.orderNo)
+  const orderNoLabel = orderNo ? `【订单号${orderNo}】` : ''
   const timing =
     daysUntilDeparture === 0
       ? '今天就要出行了'
       : `还有${daysUntilDeparture}天就要出行了`
-  return `【${departureDate}】【${formatWeekdayForReminder(departureDate)}】【${getString(data.fromStation)}】到【${getString(data.toStation)}】的候补订单还没有候补成功，${timing}，请考虑【买长乘短、买短乘长、更换交通方式】等方案`
+  return `【${departureDate}】【${formatWeekdayForReminder(departureDate)}】【${getString(data.fromStation)}】到【${getString(data.toStation)}】的候补订单${orderNoLabel}还没有候补成功，${timing}，请考虑【买长乘短、买短乘长、更换交通方式】等方案`
 }
 
 export function isPendingWaitlistOrder(order: { status: string }): boolean {
@@ -322,6 +325,10 @@ function getString(value: Prisma.JsonValue | undefined): string {
     throw new Error('提醒任务 payload 缺少字符串字段')
   }
   return value
+}
+
+function getOptionalString(value: Prisma.JsonValue | undefined): string | null {
+  return typeof value === 'string' && value.trim() !== '' ? value : null
 }
 
 function getStringArray(value: Prisma.JsonValue | undefined): string[] {
