@@ -1,3 +1,12 @@
-ignoredBuiltDependencies:
-  - sharp
-  - unrs-resolver
+allowBuilds:
+  '@parcel/watcher': true
+  '@prisma/engines': true
+  prisma: true
+  sharp: true
+  unrs-resolver: false
+
+overrides:
+  postcss: 8.5.18
+  sharp: 0.35.0
+
+saveExact: true
