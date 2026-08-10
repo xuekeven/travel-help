@@ -4,7 +4,7 @@ module.exports = {
   apps: [
     {
       name: '12306-help',
-      script: 'pnpm',
+      script: './node_modules/next/dist/bin/next',
       args: 'start',
       cwd: __dirname,
       instances: 1,
