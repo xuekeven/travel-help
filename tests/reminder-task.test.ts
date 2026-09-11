@@ -5,6 +5,7 @@ import {
   buildReminderMessage,
   buildWaitlistReminderSeeds,
   syncPlanReminderTasks,
+  syncTravelOrderReminderTasks,
 } from '@/lib/reminder-task'
 
 const plan = {
@@ -99,5 +100,85 @@ describe('waitlist reminder seeds', () => {
         daysUntilDeparture: 2,
       })
     ).toContain('的候补订单还没有候补成功')
+  })
+})
+
+describe('order reminder initial backfill', () => {
+  const order = {
+    orderNo: 'E123123123123',
+    departureDate: new Date('2026-09-05T00:00:00.000Z'),
+    departureTime: '15:03',
+    fromStation: '邯郸东',
+    toStation: '石家庄',
+    trainCode: 'G1282',
+    passengerNames: ['薛凯'],
+    seatTypeNames: ['二等座'],
+    seatNames: ['12C号'],
+    cancelFlag: null,
+    ticketStatusNames: ['已支付'],
+    orderStatus: null,
+  }
+
+  it('does not first-create an order reminder more than 30 minutes late', async () => {
+    const updateMany = vi.fn().mockResolvedValue({ count: 0 })
+    const createMany = vi.fn().mockResolvedValue({ count: 2 })
+    const tx = {
+      reminderTask: { updateMany, createMany },
+    } as unknown as Prisma.TransactionClient
+
+    await syncTravelOrderReminderTasks(
+      tx,
+      [order],
+      new Date('2026-09-03T15:56:00.000Z')
+    )
+
+    expect(createMany).toHaveBeenCalledTimes(1)
+    expect(createMany.mock.calls[0][0].data).toHaveLength(2)
+    expect(createMany.mock.calls[0][0].data).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          dedupeKey: 'travel:E123123123123:1788364800000:2',
+        }),
+      ])
+    )
+    expect(updateMany).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          dedupeKey: 'travel:E123123123123:1788364800000:2',
+          status: 'CANCELLED',
+        }),
+      })
+    )
+    expect(updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          dedupeKey: 'travel:E123123123123:1788364800000:2',
+          status: 'PENDING',
+        }),
+        data: expect.not.objectContaining({ attempts: expect.anything() }),
+      })
+    )
+  })
+
+  it('allows first creation within the 30-minute grace window', async () => {
+    const updateMany = vi.fn().mockResolvedValue({ count: 0 })
+    const createMany = vi.fn().mockResolvedValue({ count: 3 })
+    const tx = {
+      reminderTask: { updateMany, createMany },
+    } as unknown as Prisma.TransactionClient
+
+    await syncTravelOrderReminderTasks(
+      tx,
+      [order],
+      new Date('2026-09-02T16:20:00.000Z')
+    )
+
+    expect(createMany.mock.calls[0][0].data).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          dedupeKey: 'travel:E123123123123:1788364800000:2',
+        }),
+      ])
+    )
   })
 })

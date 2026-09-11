@@ -52,6 +52,7 @@ export type TravelOrderForReminder = {
 }
 
 const DAILY_REMINDER_DAYS = [2, 1, 0] as const
+const ORDER_REMINDER_INITIAL_BACKFILL_GRACE_MS = 30 * 60 * 1000
 
 export function buildPlanReminderSeeds(plan: PlanForReminder): ReminderSeed[] {
   const seeds = [plan.saleDate, ...plan.additionalSaleDates].flatMap(
@@ -159,7 +160,14 @@ export async function syncTravelOrderReminderTasks(
   orders: TravelOrderForReminder[],
   now = new Date()
 ): Promise<void> {
-  await syncReminderSeeds(tx, 'TRAVEL_ORDER', {}, buildTravelOrderReminderSeeds(orders), now)
+  await syncReminderSeeds(
+    tx,
+    'TRAVEL_ORDER',
+    {},
+    buildTravelOrderReminderSeeds(orders),
+    now,
+    ORDER_REMINDER_INITIAL_BACKFILL_GRACE_MS
+  )
 }
 
 export async function syncWaitlistReminderTasks(
@@ -167,7 +175,14 @@ export async function syncWaitlistReminderTasks(
   orders: WaitlistOrderForReminder[],
   now = new Date()
 ): Promise<void> {
-  await syncReminderSeeds(tx, 'WAITLIST_ORDER', {}, buildWaitlistReminderSeeds(orders), now)
+  await syncReminderSeeds(
+    tx,
+    'WAITLIST_ORDER',
+    {},
+    buildWaitlistReminderSeeds(orders),
+    now,
+    ORDER_REMINDER_INITIAL_BACKFILL_GRACE_MS
+  )
 }
 
 export async function cancelPlanReminderTasks(
@@ -193,10 +208,17 @@ async function syncReminderSeeds(
   kind: ReminderKind,
   scope: { sourceId?: string },
   seeds: ReminderSeed[],
-  now: Date
+  now: Date,
+  initialBackfillGraceMs?: number
 ): Promise<void> {
   const activeSeeds = seeds.filter((seed) => seed.expiresAt.getTime() > now.getTime())
   const desiredKeys = activeSeeds.map((seed) => seed.dedupeKey)
+  const creatableSeeds = activeSeeds.filter(
+    (seed) =>
+      initialBackfillGraceMs === undefined ||
+      seed.scheduledAt.getTime() >= now.getTime() - initialBackfillGraceMs
+  )
+  const creatableKeys = new Set(creatableSeeds.map((seed) => seed.dedupeKey))
 
   await tx.reminderTask.updateMany({
     where: {
@@ -212,13 +234,15 @@ async function syncReminderSeeds(
 
   if (activeSeeds.length === 0) return
 
-  await tx.reminderTask.createMany({
-    data: activeSeeds.map((seed) => ({
-      ...seed,
-      nextRetryAt: seed.scheduledAt,
-    })),
-    skipDuplicates: true,
-  })
+  if (creatableSeeds.length > 0) {
+    await tx.reminderTask.createMany({
+      data: creatableSeeds.map((seed) => ({
+        ...seed,
+        nextRetryAt: seed.scheduledAt,
+      })),
+      skipDuplicates: true,
+    })
+  }
 
   await Promise.all(
     activeSeeds.map(async (seed) => {
@@ -233,24 +257,26 @@ async function syncReminderSeeds(
           payload: seed.payload,
         },
       })
-      await tx.reminderTask.updateMany({
-        where: {
-          dedupeKey: seed.dedupeKey,
-          status: 'CANCELLED',
-        },
-        data: {
-          status: 'PENDING',
-          scheduledAt: seed.scheduledAt,
-          expiresAt: seed.expiresAt,
-          payload: seed.payload,
-          nextRetryAt: seed.scheduledAt,
-          lockedAt: null,
-          lockOwner: null,
-          attempts: 0,
-          sentAt: null,
-          lastError: null,
-        },
-      })
+      if (creatableKeys.has(seed.dedupeKey)) {
+        await tx.reminderTask.updateMany({
+          where: {
+            dedupeKey: seed.dedupeKey,
+            status: 'CANCELLED',
+          },
+          data: {
+            status: 'PENDING',
+            scheduledAt: seed.scheduledAt,
+            expiresAt: seed.expiresAt,
+            payload: seed.payload,
+            nextRetryAt: seed.scheduledAt,
+            lockedAt: null,
+            lockOwner: null,
+            attempts: 0,
+            sentAt: null,
+            lastError: null,
+          },
+        })
+      }
     })
   )
 }
