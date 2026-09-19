@@ -3,8 +3,8 @@ import { AntdRegistry } from '@ant-design/nextjs-registry'
 import '@/styles/globals.scss'
 
 export const metadata: Metadata = {
-  title: '12306 买票助手',
-  description: '个人火车票购票提醒与候补订单管理工具',
+  title: 'Travel Help · 旅行助手',
+  description: '管理出行计划、订单与提醒的个人旅行助手',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

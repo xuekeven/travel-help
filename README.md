@@ -1,8 +1,10 @@
-# 12306 买票助手
+# Travel Help · 旅行助手
 
-一个用于管理火车购票计划、同步 12306 出行订单和候补订单，并通过企业微信发送关键时间提醒的个人工具。
+一个可持续扩展的个人旅行管理工具，用于集中管理出行计划、订单与关键时间提醒。
 
-## 主要功能
+目前首先实现了 **12306 火车出行模块**：管理火车购票计划，通过浏览器插件同步 12306 出行订单和候补订单，并通过企业微信发送提醒。后续可以在同一项目中继续加入航班、酒店、行程编排等模块。
+
+## 当前功能：12306 火车出行
 
 - **购票计划**：记录出行日期、车站、席别和开售时间；支持多个开售时间，并通过持久化任务在售前 24 小时和售前 15 分钟可靠提醒。
 - **出行订单**：通过 Chrome 插件同步 12306 未出行订单，展示车次、旅客、席位、票价和退票费用；在出行日期前 2 天、前 1 天和当天的 00:00 生成持久化提醒。
@@ -47,7 +49,7 @@ pnpm dev-mock
 在项目根目录创建 `.env`：
 
 ```dotenv
-DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/12306_help"
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/travel_help"
 EXTENSION_SYNC_TOKEN="your-sync-token"
 
 # 企业微信提醒，可选；未配置时只在控制台输出通知
@@ -70,7 +72,7 @@ pm2 startOrReload ecosystem.config.js
 pm2 save
 ```
 
-`ecosystem.config.js` 会通过 `pnpm start` 运行 Next.js，并由 PM2 负责进程守护、自动重启和日志管理。生产环境通过 nginx 挂载到 `/12306/` 时，由 nginx 将 `/12306/` 转发到 Next.js 根路径。详细配置见 [docs/5.生产部署.md](docs/5.生产部署.md)。
+`ecosystem.config.js` 会通过 `pnpm start` 运行 Next.js，并由 PM2 负责进程守护、自动重启和日志管理。生产环境通过 nginx 挂载到 `/travel/` 时，由 nginx 将 `/travel/` 转发到 Next.js 根路径。详细配置见 [docs/5.生产部署.md](docs/5.生产部署.md)。
 
 ## 质量检查
 

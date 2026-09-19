@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    await sendWeComMessage('这是一条来自 12306 买票助手的测试通知，服务运行正常', {
+    await sendWeComMessage('这是一条来自 Travel Help 旅行助手的测试通知，服务运行正常', {
       idempotencyKey: `test:${randomUUID()}`,
     })
     const relayOn = isWeComRelayConfigured()

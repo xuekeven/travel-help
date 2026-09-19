@@ -3,7 +3,7 @@ const path = require('path')
 module.exports = {
   apps: [
     {
-      name: '12306-help',
+      name: 'travel-help',
       script: './node_modules/next/dist/bin/next',
       args: 'start',
       cwd: __dirname,

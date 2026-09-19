@@ -12,7 +12,7 @@ export default function HomePage() {
       <App>
         <main className={styles.main}>
           <div className={styles.pageHeader}>
-            <h1 className={styles.title}>12306 买票助手</h1>
+            <h1 className={styles.title}>Travel Help · 旅行助手</h1>
             <RealtimeClock />
           </div>
           <PlanSection />

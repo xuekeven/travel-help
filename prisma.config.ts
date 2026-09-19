@@ -6,6 +6,6 @@ import { defineConfig } from 'prisma/config'
 // PrismaClient 运行时连接通过 lib/prisma.ts 中的 adapter 配置
 export default defineConfig({
   datasource: {
-    url: process.env.DATABASE_URL ?? 'postgresql://kai@localhost:5432/12306_help',
+    url: process.env.DATABASE_URL ?? 'postgresql://kai@localhost:5432/travel_help',
   },
 })

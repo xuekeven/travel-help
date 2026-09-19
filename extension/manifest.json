@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "12306 买票助手",
+  "name": "Travel Help · 12306 同步助手",
   "version": "1.0.0",
   "description": "自动同步候补订单和未出行订单到本地助手服务",
   "permissions": ["storage"],
@@ -47,7 +47,7 @@
     "128": "icons/icon128.png"
   },
   "action": {
-    "default_title": "12306 买票助手",
+    "default_title": "Travel Help · 12306 同步助手",
     "default_icon": "icons/icon48.png",
     "default_popup": "popup.html"
   }

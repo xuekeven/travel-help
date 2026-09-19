@@ -1,4 +1,4 @@
-# 12306 买票助手 · Chrome Extension
+# Travel Help · 12306 同步助手 · Chrome Extension
 
 ## 安装方式（开发者模式，无需上架）
 
@@ -11,8 +11,8 @@
 ## 首次配置
 
 1. 点击工具栏图标，直接在弹出的面板中填写配置；也可以右键图标 → 「选项」
-2. 填写 **服务器地址**（**HTTPS**，与 Mixed Content 策略兼容；如果经过 nginx 挂载到 `/12306/`，地址需包含该前缀）：
-   - 示例：`https://homeserver.tailed5977.ts.net/12306`（**无**末尾 `/`）
+2. 填写 **服务器地址**（**HTTPS**，与 Mixed Content 策略兼容；如果经过 nginx 挂载到 `/travel/`，地址需包含该前缀）：
+   - 示例：`https://homeserver.tailed5977.ts.net/travel`（**无**末尾 `/`）
    - 若直连 Next 服务，也可用 `http://<Tailscale IP>:3005`；插件会自动拼接 `/api/...`
 3. 打开 **「启用」** 开关；未启用时，进入 12306 相关页面不会渲染状态条，也不会拦截接口或同步数据
 4. 填写 **同步 Token**：与服务器 `.env` 中 `EXTENSION_SYNC_TOKEN` 一致
@@ -61,7 +61,7 @@
 
 ```text
 [12306助手] 检测到 5 条出行订单，其中 2 条已退票订单，1 条已改签订单，2 条有效订单，准备同步...
-[12306助手] 已同步 2 条出行订单到 https://homeserver.tailed5977.ts.net/12306
+[12306助手] 已同步 2 条出行订单到 https://homeserver.tailed5977.ts.net/travel
 ```
 
 注意：`POST /otn/queryOrder/queryMyOrderNoComplete` 是「未完成订单」接口，不是「未出行订单」，插件会明确忽略该接口。

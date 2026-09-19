@@ -1,5 +1,5 @@
 /**
- * 12306 买票助手 · Content Script（Isolated World）
+ * Travel Help · 12306 同步助手 · Content Script（Isolated World）
  *
  * 监听 injected.js（main world）通过 postMessage 传来的候补订单/出行订单数据，
  * 使用 chrome.storage.sync 读取配置后同步到助手服务，并在页面右上角展示实时状态。

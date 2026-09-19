@@ -1,5 +1,5 @@
 /**
- * 12306 买票助手 · Main World 脚本
+ * Travel Help · 12306 同步助手 · Main World 脚本
  *
  * 12306 页面使用的是 XMLHttpRequest（而非 fetch），
  * 通过覆盖 XMLHttpRequest.prototype 拦截候补订单接口响应，
