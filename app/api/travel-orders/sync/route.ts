@@ -48,6 +48,12 @@ export async function POST(request: NextRequest) {
   }
 
   await prisma.$transaction(async (tx) => {
+    const linkedOrders = await tx.travelOrder.findMany({
+      where: { tripId: { not: null } },
+      select: { orderNo: true, tripId: true },
+    })
+    const tripIdByOrderNo = new Map(linkedOrders.map((order) => [order.orderNo, order.tripId]))
+
     await tx.travelOrder.deleteMany({})
 
     if (normalizedOrders.length > 0) {
@@ -80,6 +86,7 @@ export async function POST(request: NextRequest) {
           confirmFlag: order.confirmFlag,
           orderStatus: order.orderStatus,
           rawData: order.rawData ?? {},
+          tripId: tripIdByOrderNo.get(order.orderNo) ?? null,
         })),
       })
     }

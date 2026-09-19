@@ -33,6 +33,7 @@ export type MockTravelPlan = {
   remark: string | null
   createdAt: Date
   updatedAt: Date
+  tripId: string | null
 }
 
 export type MockWaitlistOrder = {
@@ -108,6 +109,7 @@ export function createMockPlan(input: {
     remark: input.remark || null,
     createdAt: now,
     updatedAt: now,
+    tripId: null,
   }
   store.plans.push(plan)
   return plan
@@ -382,6 +384,7 @@ function mockPlan(
     remark,
     createdAt: now,
     updatedAt: now,
+    tripId: null,
   }
 }
 

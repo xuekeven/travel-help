@@ -30,11 +30,20 @@ export async function POST(request: NextRequest) {
   }
 
   await prisma.$transaction(async (tx) => {
+    const linkedOrders = await tx.waitlistOrder.findMany({
+      where: { tripId: { not: null } },
+      select: { orderNo: true, tripId: true },
+    })
+    const tripIdByOrderNo = new Map(linkedOrders.map((order) => [order.orderNo, order.tripId]))
+
     await tx.waitlistOrder.deleteMany({})
 
     if (orders.length > 0) {
       await tx.waitlistOrder.createMany({
-        data: orders,
+        data: orders.map((order) => ({
+          ...order,
+          tripId: tripIdByOrderNo.get(order.orderNo) ?? null,
+        })),
       })
     }
 

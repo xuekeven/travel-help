@@ -1,9 +1,10 @@
 /**
- * 浏览器端请求本应用 API。
+ * 浏览器端生成应用内地址。
  *
- * 不再使用 Next basePath。生产环境由 nginx 将 `/travel/` 反代到 Next 根路径，
- * 因此这里返回相对路径，让页面位于 `/travel/` 时自然请求 `/travel/api/...`。
+ * 生产环境由 nginx 通过 /travel/ 暴露应用，开发环境则直接使用根路径。
+ * 返回绝对路径以确保嵌套路由中的 API 请求和页面链接不会错误地相对解析。
  */
 export function withBasePath(path: string): string {
-  return path.replace(/^\/+/, '')
+  const normalized = path.replace(/^\/+/, '')
+  return process.env.NODE_ENV === 'production' ? `/travel/${normalized}` : `/${normalized}`
 }

@@ -133,3 +133,59 @@ export const PLAN_STATUS_COLORS: Record<PlanStatus, string> = {
   PENDING_SALE: 'default',
   ON_SALE: 'processing',
 }
+
+
+export type TripStatus = 'PLANNING' | 'UPCOMING' | 'ACTIVE' | 'COMPLETED'
+
+export interface Trip {
+  id: string
+  name: string
+  startDate: string
+  endDate: string
+  cities: string[]
+  status: TripStatus
+  notes: string | null
+  createdAt: string
+  updatedAt: string
+  transportCount: number
+  planCount: number
+  orderCount: number
+  waitlistCount: number
+  placeCount: number
+}
+
+export type TripTransportKind = 'PLAN' | 'ORDER' | 'WAITLIST'
+
+export interface TripTransportItem {
+  kind: TripTransportKind
+  id: string
+  date: string
+  time: string | null
+  fromStation: string
+  toStation: string
+  code: string | null
+  status: string
+  linked: boolean
+}
+
+
+export type PlaceCategory = 'FOOD' | 'ATTRACTION' | 'HOTEL' | 'TRANSPORT' | 'SHOPPING' | 'OTHER'
+export type PlaceVisitStatus = 'WISHLIST' | 'PLANNED' | 'VISITED'
+
+export interface TripPlace {
+  id: string
+  tripId: string
+  name: string
+  category: PlaceCategory
+  visitStatus: PlaceVisitStatus
+  city: string | null
+  address: string | null
+  latitude: number
+  longitude: number
+  plannedDate: string | null
+  plannedTime: string | null
+  notes: string | null
+  guideUrl: string | null
+  createdAt: string
+  updatedAt: string
+}
