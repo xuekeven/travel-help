@@ -1,61 +1,8 @@
-.sortControls {
-  display: inline-flex;
-  flex-wrap: wrap;
-  gap: 10px;
+.sortControls { display: inline-flex; flex-wrap: wrap; gap: 7px; }
+.sortButton { min-height: 34px; padding: 0 12px; display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--travel-line); border-radius: 9px; color: var(--travel-muted); background: rgba(255,255,255,.62); cursor: pointer; font-size: 12px; font-weight: 600; transition: color 160ms ease,border-color 160ms ease,background 160ms ease;
+  &:hover { color: var(--travel-blue); border-color: rgba(23,70,162,.34); background: var(--travel-blue-soft); }
 }
-
-.sortButton {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 40px;
-  padding: 0 18px;
-  border: 1px solid rgba(147, 197, 253, 0.85);
-  border-radius: 999px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(239, 246, 255, 0.86));
-  color: #2563eb;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 1;
-  box-shadow: 0 8px 22px rgba(37, 99, 235, 0.08);
-  transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
-
-  &:hover {
-    background: #eef4ff;
-    box-shadow: 0 12px 28px rgba(37, 99, 235, 0.14);
-    transform: translateY(-1px);
-  }
-}
-
-.active {
-  background: #eef4ff;
-  border-color: #60a5fa;
-}
-
-.sortIcon {
-  display: inline-flex;
-  flex-direction: column;
-  gap: 2px;
-  width: 8px;
-}
-
-.triangle {
-  width: 0;
-  height: 0;
-  border-left: 4px solid transparent;
-  border-right: 4px solid transparent;
-  opacity: 0.28;
-}
-
-.up {
-  border-bottom: 5px solid currentColor;
-}
-
-.down {
-  border-top: 5px solid currentColor;
-}
-
-.triangle.active {
-  opacity: 1;
-}
+.active { color: var(--travel-blue); border-color: rgba(23,70,162,.28); background: var(--travel-blue-soft); }
+.sortIcon { width: 8px; display: inline-flex; flex-direction: column; gap: 2px; }
+.triangle { width: 0; height: 0; border-right: 4px solid transparent; border-left: 4px solid transparent; opacity: .24; }
+.up { border-bottom: 5px solid currentColor; } .down { border-top: 5px solid currentColor; } .triangle.active { opacity: 1; }

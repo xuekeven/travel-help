@@ -65,7 +65,7 @@ export default function WaitlistSection() {
   useEffect(() => { fetchOrders() }, [fetchOrders])
 
   return (
-    <section className={styles.section}>
+    <section className={styles.section} id="waitlist">
       <div className={styles.header}>
         <div className={styles.headerTop}>
           <SectionTitle

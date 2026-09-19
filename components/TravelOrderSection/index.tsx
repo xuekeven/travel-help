@@ -185,7 +185,7 @@ export default function TravelOrderSection() {
   }, [fetchOrders])
 
   return (
-    <section className={styles.section}>
+    <section className={styles.section} id="orders">
       <div className={styles.header}>
         <div className={styles.headerTop}>
           <SectionTitle

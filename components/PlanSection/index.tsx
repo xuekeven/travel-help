@@ -167,7 +167,7 @@ export default function PlanSection() {
   ]
 
   return (
-    <section className={styles.section}>
+    <section className={styles.section} id="plans">
       <div className={styles.header}>
         <SectionTitle
           title="购票计划"
