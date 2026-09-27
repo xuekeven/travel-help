@@ -8,7 +8,6 @@ const countSelection = {
   travelPlans: true,
   travelOrders: true,
   waitlistOrders: true,
-  places: true,
 } as const
 
 export async function GET(_request: NextRequest, { params }: Params) {
@@ -33,23 +32,6 @@ export async function POST(request: NextRequest, { params }: Params) {
   if (!existing) return NextResponse.json({ error: '行程不存在' }, { status: 404 })
 
   const input = parsed.data
-  const placesOutsideRange = await prisma.tripPlace.count({
-    where: {
-      tripId: id,
-      plannedDate: { not: null },
-      OR: [
-        { plannedDate: { lt: input.startDate } },
-        { plannedDate: { gt: input.endDate } },
-      ],
-    },
-  })
-  if (placesOutsideRange > 0) {
-    return NextResponse.json(
-      { error: '已有地点安排在新的旅行日期范围之外，请先调整地点日期' },
-      { status: 400 }
-    )
-  }
-
   const trip = await prisma.trip.update({
     where: { id },
     data: {

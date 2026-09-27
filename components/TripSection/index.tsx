@@ -142,8 +142,8 @@ export default function TripSection() {
                 </div>
                 <div className={styles.stats}>
                   <span><strong>{trip.transportCount}</strong> 项交通</span>
-                  <span><strong>{trip.placeCount}</strong> 个地点</span>
                   <span><strong>{trip.orderCount}</strong> 张已出票</span>
+                  <span><strong>{trip.waitlistCount}</strong> 个候补</span>
                 </div>
               </a>
               <div className={styles.actions}>

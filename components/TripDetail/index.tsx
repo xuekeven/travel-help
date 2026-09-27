@@ -6,17 +6,14 @@ import {
   ArrowLeftOutlined,
   CalendarOutlined,
   EditOutlined,
-  EnvironmentOutlined,
   LinkOutlined,
-  RocketOutlined,
   SwapRightOutlined,
 } from '@ant-design/icons'
-import type { PlaceCategory, Trip, TripPlace, TripStatus, TripTransportItem, TripTransportKind } from '@/types'
+import type { Trip, TripStatus, TripTransportItem, TripTransportKind } from '@/types'
 import { withBasePath } from '@/lib/with-base-path'
 import RealtimeClock from '@/components/RealtimeClock'
 import TravelAppProvider from '@/components/TravelAppProvider'
 import TripForm from '@/components/TripSection/TripForm'
-import TripPlaces from '@/components/TripPlaces'
 import styles from './index.module.scss'
 
 const STATUS_LABELS: Record<TripStatus, string> = {
@@ -35,15 +32,6 @@ const KIND_COLORS: Record<TripTransportKind, string> = {
   ORDER: 'blue',
   WAITLIST: 'purple',
 }
-const PLACE_CATEGORY_LABELS: Record<PlaceCategory, string> = {
-  FOOD: '美食',
-  ATTRACTION: '景点',
-  HOTEL: '酒店',
-  TRANSPORT: '交通地点',
-  SHOPPING: '购物',
-  OTHER: '地点',
-}
-
 function formatLongDate(value: string) {
   return new Intl.DateTimeFormat('zh-CN', {
     month: 'long',
@@ -56,7 +44,6 @@ function TripDetailContent({ tripId }: { tripId: string }) {
   const { message } = App.useApp()
   const [trip, setTrip] = useState<Trip | null>(null)
   const [transport, setTransport] = useState<TripTransportItem[]>([])
-  const [places, setPlaces] = useState<TripPlace[]>([])
   const [loading, setLoading] = useState(true)
   const [editOpen, setEditOpen] = useState(false)
   const [transportOpen, setTransportOpen] = useState(false)
@@ -85,39 +72,15 @@ function TripDetailContent({ tripId }: { tripId: string }) {
 
   useEffect(() => { void loadData() }, [loadData])
 
-  const handlePlacesChange = useCallback((nextPlaces: TripPlace[]) => {
-    setPlaces(nextPlaces)
-    setTrip((current) => current ? { ...current, placeCount: nextPlaces.length } : current)
-  }, [])
-
   const timeline = useMemo(() => {
-    type TimelineEntry =
-      | { type: 'transport'; key: string; date: string; time: string | null; item: TripTransportItem }
-      | { type: 'place'; key: string; date: string; time: string | null; item: TripPlace }
-    const groups = new Map<string, TimelineEntry[]>()
-    const addEntry = (entry: TimelineEntry) => {
-      const group = groups.get(entry.date) ?? []
-      group.push(entry)
-      groups.set(entry.date, group)
-    }
-    transport.filter((item) => item.linked).forEach((item) => addEntry({
-      type: 'transport',
-      key: `transport-${item.kind}-${item.id}`,
-      date: item.date,
-      time: item.time,
-      item,
-    }))
-    places.filter((place) => place.plannedDate).forEach((place) => addEntry({
-      type: 'place',
-      key: `place-${place.id}`,
-      date: place.plannedDate!,
-      time: place.plannedTime,
-      item: place,
-    }))
+    const groups = new Map<string, TripTransportItem[]>()
+    transport.filter((item) => item.linked).forEach((item) => {
+      const group = groups.get(item.date) ?? []
+      group.push(item)
+      groups.set(item.date, group)
+    })
     return Array.from(groups.entries())
-      .sort(([dateA], [dateB]) => dateA.localeCompare(dateB))
-      .map(([date, entries]) => [date, entries.sort((a, b) => (a.time ?? '99:99').localeCompare(b.time ?? '99:99'))] as const)
-  }, [places, transport])
+  }, [transport])
 
   const saveTrip = async (payload: {
     name: string
@@ -202,8 +165,7 @@ function TripDetailContent({ tripId }: { tripId: string }) {
         <nav>
           <a href="#overview">总览</a>
           <a href="#timeline">日程</a>
-          <a href="#transport">交通</a>
-          <a href="#map">地图</a>
+          <a href="#timeline">交通</a>
           <span className={styles.disabled}>行李</span>
         </nav>
         <RealtimeClock />
@@ -252,15 +214,14 @@ function TripDetailContent({ tripId }: { tripId: string }) {
         </article>
       </section>
 
-      <div className={styles.contentGrid}>
+      <div className={`${styles.contentGrid} ${trip.notes ? '' : styles.singleColumn}`}>
         <section className={styles.panel} id="timeline">
           <div className={styles.panelHeading}>
             <div><span className={styles.kicker}>ITINERARY</span><h2>按天行程</h2></div>
-            <Button type="primary" icon={<LinkOutlined />} onClick={() => setTransportOpen(true)}>关联交通</Button>
           </div>
           {timeline.length === 0 ? (
             <div className={styles.emptyTimeline}>
-              <Empty description="还没有安排交通或地点">
+              <Empty description="还没有关联交通记录">
                 <Button icon={<LinkOutlined />} onClick={() => setTransportOpen(true)}>从现有记录中关联</Button>
               </Empty>
             </div>
@@ -268,23 +229,15 @@ function TripDetailContent({ tripId }: { tripId: string }) {
             <div className={styles.day} key={date}>
               <div className={styles.dayLabel}><b>DAY {String(dayIndex + 1).padStart(2, '0')}</b><span>{formatLongDate(date)}</span></div>
               <div className={styles.dayItems}>
-                {items.map((entry) => (
-                  <article className={styles.timelineItem} key={entry.key}>
-                    <time>{entry.time || '待定'}</time>
+                {items.map((item) => (
+                  <article className={styles.timelineItem} key={`${item.kind}-${item.id}`}>
+                    <time>{item.time || '待定'}</time>
                     <div className={styles.dot} />
-                    {entry.type === 'transport' ? (
-                      <div>
-                        <Tag color={KIND_COLORS[entry.item.kind]}>{KIND_LABELS[entry.item.kind]}</Tag>
-                        <h3>{entry.item.fromStation} <SwapRightOutlined /> {entry.item.toStation}</h3>
-                        <p>{entry.item.code ? `${entry.item.code} · ` : ''}{entry.item.status}</p>
-                      </div>
-                    ) : (
-                      <div>
-                        <Tag color="green">{PLACE_CATEGORY_LABELS[entry.item.category]}</Tag>
-                        <h3>{entry.item.name}</h3>
-                        <p>{entry.item.city || entry.item.address || '行程地点'}</p>
-                      </div>
-                    )}
+                    <div>
+                      <Tag color={KIND_COLORS[item.kind]}>{KIND_LABELS[item.kind]}</Tag>
+                      <h3>{item.fromStation} <SwapRightOutlined /> {item.toStation}</h3>
+                      <p>{item.code ? `${item.code} · ` : ''}{item.status}</p>
+                    </div>
                   </article>
                 ))}
               </div>
@@ -292,32 +245,13 @@ function TripDetailContent({ tripId }: { tripId: string }) {
           ))}
         </section>
 
-        <aside className={styles.side}>
-          <section className={styles.sidePanel} id="transport">
-            <div className={styles.icon}><RocketOutlined /></div>
-            <span>TRANSPORT</span>
-            <h2>交通</h2>
-            <p>已关联 {trip.transportCount} 项，包括 {trip.orderCount} 张已出票订单和 {trip.waitlistCount} 个候补。</p>
-            <Button block onClick={() => setTransportOpen(true)}>管理关联</Button>
-          </section>
-          <section className={styles.sidePanel}>
-            <div className={styles.icon}><EnvironmentOutlined /></div>
-            <span>PLACES</span>
-            <h2>地图与地点</h2>
-            <p>已收藏 {trip.placeCount} 个地点，可按美食、景点、酒店等分类查看。</p>
-            <Button block href="#map">查看地图</Button>
-          </section>
-          {trip.notes && <section className={styles.note}><span>行程备注</span><p>{trip.notes}</p></section>}
-        </aside>
+        {trip.notes && (
+          <aside className={styles.side}>
+            <section className={styles.note}><span>行程备注</span><p>{trip.notes}</p></section>
+          </aside>
+        )}
       </div>
 
-      <TripPlaces
-        tripId={trip.id}
-        tripCities={trip.cities}
-        tripStartDate={trip.startDate}
-        tripEndDate={trip.endDate}
-        onPlacesChange={handlePlacesChange}
-      />
 
       <Modal
         title="关联交通记录"

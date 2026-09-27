@@ -22,7 +22,7 @@ export function parseTripInput(body: unknown):
   const startDateText = typeof value.startDate === 'string' ? value.startDate : ''
   const endDateText = typeof value.endDate === 'string' ? value.endDate : ''
   const cities = Array.isArray(value.cities)
-    ? Array.from(new Set(value.cities.filter((item): item is string => typeof item === 'string').map((item) => item.trim()).filter(Boolean)))
+    ? value.cities.filter((item): item is string => typeof item === 'string').map((item) => item.trim()).filter(Boolean)
     : []
   const notes = typeof value.notes === 'string' && value.notes.trim() ? value.notes.trim() : null
 
@@ -63,7 +63,6 @@ type TripWithCount = Trip & {
     travelPlans: number
     travelOrders: number
     waitlistOrders: number
-    places: number
   }
 }
 
@@ -86,6 +85,5 @@ export function serializeTrip(trip: TripWithCount) {
     planCount: trip._count?.travelPlans ?? 0,
     orderCount: trip._count?.travelOrders ?? 0,
     waitlistCount: trip._count?.waitlistOrders ?? 0,
-    placeCount: trip._count?.places ?? 0,
   }
 }

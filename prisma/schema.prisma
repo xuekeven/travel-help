@@ -45,21 +45,6 @@ enum TripStatus {
   COMPLETED
 }
 
-enum PlaceCategory {
-  FOOD
-  ATTRACTION
-  HOTEL
-  TRANSPORT
-  SHOPPING
-  OTHER
-}
-
-enum PlaceVisitStatus {
-  WISHLIST
-  PLANNED
-  VISITED
-}
-
 model Trip {
   id             String          @id @default(uuid())
   name           String
@@ -73,33 +58,9 @@ model Trip {
   travelPlans    TravelPlan[]
   travelOrders   TravelOrder[]
   waitlistOrders WaitlistOrder[]
-  places         TripPlace[]
 
   @@index([startDate, endDate])
   @@map("trips")
-}
-
-model TripPlace {
-  id          String           @id @default(uuid())
-  tripId      String
-  trip        Trip             @relation(fields: [tripId], references: [id], onDelete: Cascade)
-  name        String
-  category    PlaceCategory
-  visitStatus PlaceVisitStatus @default(WISHLIST)
-  city        String?
-  address     String?
-  latitude    Float
-  longitude   Float
-  plannedDate DateTime?        @db.Date
-  plannedTime String?
-  notes       String?
-  guideUrl    String?
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
-
-  @@index([tripId, category])
-  @@index([tripId, plannedDate])
-  @@map("trip_places")
 }
 
 model TravelPlan {

@@ -1,6 +1,5 @@
 import type { Metadata } from 'next'
 import { AntdRegistry } from '@ant-design/nextjs-registry'
-import 'leaflet/dist/leaflet.css'
 import '@/styles/globals.scss'
 
 export const metadata: Metadata = {

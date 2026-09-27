@@ -14,7 +14,7 @@ describe('trip input validation', () => {
     expect(result.ok).toBe(true)
     if (result.ok) {
       expect(result.data.name).toBe('成都周末游')
-      expect(result.data.cities).toEqual(['成都', '重庆'])
+      expect(result.data.cities).toEqual(['成都', '重庆', '成都'])
       expect(result.data.notes).toBe('吃火锅')
     }
   })

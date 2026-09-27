@@ -151,7 +151,6 @@ export interface Trip {
   planCount: number
   orderCount: number
   waitlistCount: number
-  placeCount: number
 }
 
 export type TripTransportKind = 'PLAN' | 'ORDER' | 'WAITLIST'
@@ -166,26 +165,4 @@ export interface TripTransportItem {
   code: string | null
   status: string
   linked: boolean
-}
-
-
-export type PlaceCategory = 'FOOD' | 'ATTRACTION' | 'HOTEL' | 'TRANSPORT' | 'SHOPPING' | 'OTHER'
-export type PlaceVisitStatus = 'WISHLIST' | 'PLANNED' | 'VISITED'
-
-export interface TripPlace {
-  id: string
-  tripId: string
-  name: string
-  category: PlaceCategory
-  visitStatus: PlaceVisitStatus
-  city: string | null
-  address: string | null
-  latitude: number
-  longitude: number
-  plannedDate: string | null
-  plannedTime: string | null
-  notes: string | null
-  guideUrl: string | null
-  createdAt: string
-  updatedAt: string
 }

@@ -6,7 +6,6 @@ const countSelection = {
   travelPlans: true,
   travelOrders: true,
   waitlistOrders: true,
-  places: true,
 } as const
 
 export async function GET() {
