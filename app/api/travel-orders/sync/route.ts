@@ -17,7 +17,12 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json().catch(() => null)
-  if (!isRecord(body) || !Array.isArray(body.orders) || body.orders.length > 500) {
+  if (!isRecord(body) || body.source !== '12306-untraveled') {
+    return mergeExtensionCors(
+      NextResponse.json({ error: '请更新并重新加载插件，仅允许同步未出行订单' }, { status: 400 })
+    )
+  }
+  if (!Array.isArray(body.orders) || body.orders.length > 500) {
     return mergeExtensionCors(
       NextResponse.json({ error: 'orders 必须是最多 500 项的数组' }, { status: 400 })
     )

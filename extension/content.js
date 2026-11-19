@@ -668,6 +668,7 @@ async function syncTravelOrders(orders) {
       serverUrl: base,
       syncToken,
       orders,
+      source: '12306-untraveled',
     })
 
     if (chrome.runtime.lastError) {

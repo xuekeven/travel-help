@@ -54,10 +54,10 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   }
 
   if (message?.type === 'SYNC_TRAVEL_ORDERS') {
-    const { serverUrl, syncToken, orders } = message
+    const { serverUrl, syncToken, orders, source } = message
     const base = String(serverUrl ?? '').replace(/\/$/, '')
     const url = `${base}/api/travel-orders/sync`
-    sendJsonResponse(sendResponse, postJson(url, syncToken, { orders }))
+    sendJsonResponse(sendResponse, postJson(url, syncToken, { orders, source }))
     return true
   }
 

@@ -40,6 +40,14 @@
     }
   }
 
+  function getOrderQueryWhere(body) {
+    if (typeof body === 'string') return new URLSearchParams(body).get('query_where')
+    if (body instanceof URLSearchParams || body instanceof FormData) {
+      return body.get('query_where')
+    }
+    return null
+  }
+
   function notify(type, payload) {
     window.postMessage({ source: '12306_HELPER', type, payload }, '*')
   }
@@ -58,6 +66,14 @@
 
     XMLHttpRequest.prototype.send = function (...args) {
       const interceptor = INTERCEPTORS.find((item) => matchesInterceptor(this._interceptUrl, item))
+      if (interceptor?.type === 'TRAVEL_ORDERS_DATA' && getOrderQueryWhere(args[0]) !== 'G') {
+        notify('HELPER_LOG', {
+          level: 'info',
+          message: '跳过历史订单查询，仅同步未出行订单',
+          status: 'ready',
+        })
+        return originalSend.call(this, ...args)
+      }
       if (interceptor) {
         this.addEventListener('load', function () {
           try {
